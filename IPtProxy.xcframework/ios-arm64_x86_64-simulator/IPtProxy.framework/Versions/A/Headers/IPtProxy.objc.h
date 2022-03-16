@@ -28,6 +28,12 @@
 @end
 
 /**
+ * DnsttPort - Port where Dnstt will provide its service.
+Only use this property after calling StartDnstt! It might have changed after that!
+ */
+FOUNDATION_EXPORT long IPtProxyDnsttPort(void);
+
+/**
  * IsPortAvailable - Checks to see if a given port is not in use.
 
 @param port The port to check.
@@ -74,6 +80,21 @@ FOUNDATION_EXPORT long IPtProxyScramblesuitPort(void);
 Only use this property after calling StartSnowflake! It might have changed after that!
  */
 FOUNDATION_EXPORT long IPtProxySnowflakePort(void);
+
+/**
+ * StartDnstt - Start the Dnstt client.
+
+@param dohURL OPTIONAL. URL of a DoH resolver. Use either this or `dotAddr`.
+
+@param dotAddr OPTIONAL. Address of a DoT resolver. Use either this or `dohURL`.
+
+@param pubkey The DNSTT's server public key (as hex digits).
+
+@param server The DNSTT destination server domain.
+
+@return Port number where Snowflake will listen on, if no error happens during start up.
+ */
+FOUNDATION_EXPORT long IPtProxyStartDnstt(NSString* _Nullable dohURL, NSString* _Nullable dotAddr, NSString* _Nullable pubkey, NSString* _Nullable server);
 
 /**
  * StartObfs4Proxy - Start the Obfs4Proxy.
@@ -144,6 +165,11 @@ FOUNDATION_EXPORT long IPtProxyStartSnowflake(NSString* _Nullable ice, NSString*
       if you want to do UI stuff!! OPTIONAL
  */
 FOUNDATION_EXPORT void IPtProxyStartSnowflakeProxy(long capacity, NSString* _Nullable broker, NSString* _Nullable relay, NSString* _Nullable stun, NSString* _Nullable natProbe, NSString* _Nullable logFile, BOOL keepLocalAddresses, BOOL unsafeLogging, id<IPtProxySnowflakeClientConnected> _Nullable clientConnected);
+
+/**
+ * StopDnstt - Stop the Dnstt client.
+ */
+FOUNDATION_EXPORT void IPtProxyStopDnstt(void);
 
 /**
  * StopObfs4Proxy - Stop the Obfs4Proxy.
