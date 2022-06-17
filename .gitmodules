@@ -7,3 +7,5 @@
 [submodule "pt1"]
 	path = dnstt
 	url = https://github.com/tladesignz/dnstt.git
+[submodule "dnstt"]
+	url = https://www.bamsoftware.com/git/dnstt.git
