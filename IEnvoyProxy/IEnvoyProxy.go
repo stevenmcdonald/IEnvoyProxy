@@ -1,4 +1,4 @@
-package IPtProxy
+package IEnvoyProxy
 
 import (
 	"fmt"
@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"time"
 	dnsttclient "www.bamsoftware.com/git/dnstt.git/dnstt-client"
+	hysteria "github.com/tobyxdd/hysteria/cmd"
 )
 
 var meekPort = 47000
