@@ -385,18 +385,20 @@ func StopSnowflakeProxy() {
 
 // StartDnstt - Start the Dnstt client.
 //
+// @param ttDomain	subdomain name for DNSTT
+//
 // @param dohURL OPTIONAL. URL of a DoH resolver. Use either this or `dotAddr`.
 //
 // @param dotAddr OPTIONAL. Address of a DoT resolver. Use either this or `dohURL`.
 //
 // @param pubkey The DNSTT's server public key (as hex digits).
 //
-// @param server The DNSTT destination server domain.
+// @param utlsDistribution OPTIONAL. What browser UAs to use (see DNSTT docs)
 //
 // @return Port number where Dnstt will listen on, if no error happens during start up.
 //
 //goland:noinspection GoUnusedExportedFunction
-func StartDnstt(dohURL, dotAddr, pubkey, server string) int {
+func StartDnstt(ttDomain, dohURL, dotAddr, pubkey, utlsDistribution string) int {
 	if dnsttRunning {
 		return dnsttPort
 	}
@@ -411,7 +413,7 @@ func StartDnstt(dohURL, dotAddr, pubkey, server string) int {
 
 	fixEnv()
 
-	go dnsttclient.Start(&dohURL, &dotAddr, &pubkey, &server, &listenAddr)
+	go dnsttclient.Start(&ttDomain, &listenAddr, &dohURL, &dotAddr, &pubkey, &utlsDistribution)
 
 	return dnsttPort
 }
