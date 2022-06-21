@@ -1,11 +1,11 @@
 #!/bin/sh
 
 TARGET=ios,iossimulator,macos
-OUTPUT=IPtProxy.xcframework
+OUTPUT=IEnvoyProxy.xcframework
 
 if test "$1" = "android"; then
   TARGET=android
-  OUTPUT=IPtProxy.aar
+  OUTPUT=IEnvoyProxy.aar
 fi
 
 cd "$(dirname "$0")" || exit 1
@@ -57,7 +57,7 @@ patch --directory=dnstt --strip=1 < dnstt.patch
 # Compile framework.
 printf '\n\n--- Compile %s...\n' "$OUTPUT"
 export PATH=~/go/bin:$PATH
-cd IPtProxy.go || exit 1
+cd IEnvoyProxy || exit 1
 
 gomobile init
 
