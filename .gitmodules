@@ -6,6 +6,7 @@
 	url = https://git.torproject.org/pluggable-transports/snowflake.git
 [submodule "dnstt"]
 	url = https://www.bamsoftware.com/git/dnstt.git
+	path = dnstt
 [submodule "hysteria"]
 	path = hysteria
 	url = https://github.com/HyNetwork/hysteria.git
