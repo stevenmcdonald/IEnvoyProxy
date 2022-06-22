@@ -20,8 +20,8 @@ printf '\n--- Golang 1.16 or up needs to be installed! Try "brew install go" on 
 printf '\n--- Installing gomobile...\n'
 go install golang.org/x/mobile/cmd/gomobile@latest
 
-# Fetch submodules obfs4 and snowflake.
-printf '\n\n--- Fetching Obfs4proxy and Snowflake dependencies...\n'
+# Fetch submodules.
+printf '\n\n--- Fetching submodule dependencies...\n'
 if test -e ".git"; then
     # There's a .git directory - we must be in the development pod.
     git submodule update --init --recursive
@@ -55,7 +55,7 @@ else
 fi
 
 # Apply patches.
-printf '\n\n--- Apply patches to Obfs4proxy and Snowflake...\n'
+printf '\n\n--- Apply patches to submodules...\n'
 patch --directory=obfs4 --strip=1 < obfs4.patch
 patch --directory=snowflake --strip=1 < snowflake.patch
 patch --directory=dnstt --strip=1 < dnstt.patch
