@@ -2,6 +2,7 @@ package IEnvoyProxy
 
 import (
 	"fmt"
+	"encoding/json"
 	snowflakeclient "git.torproject.org/pluggable-transports/snowflake.git/v2/client"
 	"git.torproject.org/pluggable-transports/snowflake.git/v2/common/safelog"
 	sfp "git.torproject.org/pluggable-transports/snowflake.git/v2/proxy/lib"
@@ -88,10 +89,21 @@ func DnsttPort() int {
 	return dnsttPort
 }
 
+var hysteriaPort = 47500
+
+// HysteriaPort - Port where Hysteria will provide its service.
+// Only use this property after calling StartHysteria! It might have changed after that!
+//
+//goland:noinspection GoUnusedExportedFunction
+func HysteriaPort() int {
+	return hysteriaPort
+}
+
 var obfs4ProxyRunning = false
 var snowflakeRunning = false
 var snowflakeProxy *sfp.SnowflakeProxy
 var dnsttRunning = false
+var hysteriaRunning = false
 
 // StateLocation - Override TOR_PT_STATE_LOCATION, which defaults to "$TMPDIR/pt_state".
 var StateLocation string
@@ -429,6 +441,59 @@ func StopDnstt() {
 	go dnsttclient.Stop()
 
 	dnsttRunning = false
+}
+
+type HysteriaListen struct {
+	Listen string `json:"listen"`
+}
+
+type HysteriaConfig struct {
+	Server		string			`json:"server"`
+	Obfs		string			`json:"obfs"`
+	Socks5		HysteriaListen	`json:"socks5"`
+	Up_mbps		int				`json:"up_mbps"`
+	Down_mbps	int				`json:"down_mbps"`
+	Ca			string			`json:"ca"`
+}
+
+// StartHysteria -- Start the Hysteria client
+func StartHysteria(server, obfs, port, ca string) int {
+	if hysteriaRunning {
+		return hysteriaPort
+	}
+
+	hysteriaRunning = true
+
+	for !IsPortAvailable(hysteriaPort) {
+		hysteriaPort++
+	}
+
+	// Hysteria uses a JSON file for config, creating JSON
+	// to pass in seems like the path of least resistance
+	listenAddr := fmt.Sprintf("127.0.0.1:%d", hysteriaPort)
+
+	listenConf := HysteriaListen{listenAddr}
+	conf := HysteriaConfig{
+		server,
+		obfs,
+		listenConf,
+		1000, // up_mbps
+		1000, // down_mbps
+		ca,
+	}
+
+	confJson, err := json.Marshal(conf)
+
+	if err != nil {
+		fmt.Println(err)
+		return 0
+	}
+
+	fmt.Printf("config: %s", string(confJson))
+
+	go hysteria.Start(&confJson)
+
+	return hysteriaPort
 }
 
 // IsPortAvailable - Checks to see if a given port is not in use.
