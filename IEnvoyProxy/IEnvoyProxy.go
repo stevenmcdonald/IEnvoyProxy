@@ -457,7 +457,14 @@ type HysteriaConfig struct {
 }
 
 // StartHysteria -- Start the Hysteria client
-func StartHysteria(server, obfs, port, ca string) int {
+//
+// @param server Hysteria server hostname or IP and port, e.g. "192.168.64.2:32323"
+//
+// @param obfs Essentially a password, used to obfuscate the connection,
+// MUST use the same value on client and server
+//
+// @param ca Path to Root CA used by server (for self signed certs)
+func StartHysteria(server, obfs, ca string) int {
 	if hysteriaRunning {
 		return hysteriaPort
 	}
