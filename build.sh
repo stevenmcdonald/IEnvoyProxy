@@ -29,7 +29,9 @@ if test -e ".git"; then
     git reset --hard
     cd ../snowflake || exit 1
     git reset --hard
-    cd ../dnstt ||exit 1
+    cd ../dnstt || exit 1
+    git reset --hard
+    cd ../hysteria || exit 1
     git reset --hard
     cd ..
 else
@@ -46,6 +48,10 @@ else
     cd dnstt || exit 1
     git checkout --force --quiet 04f04590
     cd ..
+    git clone https://github.com/HyNetwork/hysteria.git
+    cd hysteria || exit 1
+    git checkout --force --quiet da16c88
+    cd ..
 fi
 
 # Apply patches.
@@ -53,6 +59,7 @@ printf '\n\n--- Apply patches to Obfs4proxy and Snowflake...\n'
 patch --directory=obfs4 --strip=1 < obfs4.patch
 patch --directory=snowflake --strip=1 < snowflake.patch
 patch --directory=dnstt --strip=1 < dnstt.patch
+patch --directory=hysteria --strip=1 < hysteria.patch
 
 # Compile framework.
 printf '\n\n--- Compile %s...\n' "$OUTPUT"
