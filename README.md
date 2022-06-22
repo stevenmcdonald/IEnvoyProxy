@@ -1,3 +1,24 @@
+# IEnovyProxy
+
+This is a fork of IPtProxy (https://github.com/tladesignz/IPtProxy) modified to include Go projects used by Envoy (https://github.com/greatfire/envoy)
+
+currently this includes:
+
+* Snowflake
+* obfs4proxy
+* DNSTT
+* Hysteria
+* V2ray (coming soon)
+
+While this library was made for use with Envoy, it does not depend on Envoy, and may be useful for other situations.
+
+iOS/MacOS version is not tested, but should work.
+
+See the comments in `IEnvoyProxy/IEnvoyProxy.go` for required and optional parameters for the various subprojects.
+
+
+Original IPtProxy README content is below:
+
 # IPtProxy
 
 Obfs4proxy and Snowflake Pluggable Transports for iOS, MacOS and Android
