@@ -4,12 +4,12 @@
  cmd/config.go      |  2 +-
  cmd/config_test.go |  2 +-
  cmd/kploader.go    |  2 +-
- cmd/main.go        | 35 ++++++++++++++++++++++++++++++++---
+ cmd/main.go        | 47 ++++++++++++++++++++++++++++++++++++++++++++---
  cmd/mmdb.go        |  2 +-
  cmd/resolver.go    |  2 +-
  cmd/server.go      |  2 +-
  cmd/update.go      |  2 +-
- 11 files changed, 42 insertions(+), 13 deletions(-)
+ 11 files changed, 54 insertions(+), 13 deletions(-)
 
 diff --git a/cmd/acme.go b/cmd/acme.go
 index c4cf196..c56e852 100644
@@ -72,16 +72,45 @@ index b71b3d0..8d6fced 100644
  import (
  	"crypto/tls"
 diff --git a/cmd/main.go b/cmd/main.go
-index bd53a30..55dc653 100644
+index bd53a30..57b125c 100644
 --- a/cmd/main.go
 +++ b/cmd/main.go
-@@ -1,4 +1,4 @@
+@@ -1,12 +1,14 @@
 -package main
 +package hysteria
  
  import (
  	"fmt"
-@@ -176,6 +176,35 @@ func init() {
+ 	"io/ioutil"
+ 	"math/rand"
+ 	"os"
++	"os/signal"
+ 	"regexp"
+ 	"strings"
++	"syscall"
+ 	"time"
+ 
+ 	nested "github.com/antonfisher/nested-logrus-formatter"
+@@ -32,6 +34,9 @@ var (
+ 	appDate    = "Unknown"
+ )
+ 
++// channel so we can exit gracefully
++var sigChan = make(chan os.Signal, 1)
++
+ var rootCmd = &cobra.Command{
+ 	Use:     "hysteria",
+ 	Long:    fmt.Sprintf("%s%s\n\nVersion:\t%s\nBuildDate:\t%s\nCommitHash:\t%s\nAuthors:\t%s", logo, desc, appVersion, appDate, appCommit, authors),
+@@ -80,6 +85,8 @@ var clientCmd = &cobra.Command{
+ 	Short:   "Run as client mode",
+ 	Example: "./hysteria client --config /etc/hysteria/client.json",
+ 	Run: func(cmd *cobra.Command, args []string) {
++		signal.Notify(sigChan, syscall.SIGTERM)
++
+ 		cbs, err := ioutil.ReadFile(viper.GetString("config"))
+ 		if err != nil {
+ 			logrus.WithFields(logrus.Fields{
+@@ -176,6 +183,40 @@ func init() {
  	viper.AutomaticEnv()
  }
  
@@ -118,6 +147,11 @@ index bd53a30..55dc653 100644
 +		}).Fatal("Failed to parse client configuration")
 +	}
 +	client(cc)
++}
++
++func Stop() {
++	logrus.Info("synthesizing SIGTERM because of explicit Stop call")
++	sigChan <- syscall.SIGTERM
  }
 diff --git a/cmd/mmdb.go b/cmd/mmdb.go
 index 1370959..91f30ab 100644

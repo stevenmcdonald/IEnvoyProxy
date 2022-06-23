@@ -503,6 +503,16 @@ func StartHysteria(server, obfs, ca string) int {
 	return hysteriaPort
 }
 
+func StopHysteria() {
+	if !hysteriaRunning {
+		return
+	}
+
+	go hysteria.Stop()
+
+	hysteriaRunning = false
+}
+
 // IsPortAvailable - Checks to see if a given port is not in use.
 //
 // @param port The port to check.
