@@ -4,3 +4,12 @@
 [submodule "snowflake"]
 	path = snowflake
 	url = https://git.torproject.org/pluggable-transports/snowflake.git
+[submodule "dnstt"]
+	url = https://www.bamsoftware.com/git/dnstt.git
+	path = dnstt
+[submodule "hysteria"]
+	path = hysteria
+	url = https://github.com/HyNetwork/hysteria.git
+[submodule "v2ray-core"]
+	path = v2ray-core
+	url = https://github.com/v2fly/v2ray-core.git

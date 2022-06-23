@@ -1,0 +1,195 @@
+ cmd/acme.go        |  2 +-
+ cmd/client.go      |  2 +-
+ cmd/completion.go  |  2 +-
+ cmd/config.go      |  2 +-
+ cmd/config_test.go |  2 +-
+ cmd/kploader.go    |  2 +-
+ cmd/main.go        | 47 ++++++++++++++++++++++++++++++++++++++++++++---
+ cmd/mmdb.go        |  2 +-
+ cmd/resolver.go    |  2 +-
+ cmd/server.go      |  2 +-
+ cmd/update.go      |  2 +-
+ 11 files changed, 54 insertions(+), 13 deletions(-)
+
+diff --git a/cmd/acme.go b/cmd/acme.go
+index c4cf196..c56e852 100644
+--- a/cmd/acme.go
++++ b/cmd/acme.go
+@@ -1,4 +1,4 @@
+-package main
++package hysteria
+ 
+ import (
+ 	"context"
+diff --git a/cmd/client.go b/cmd/client.go
+index 69b3ec6..aa826b7 100644
+--- a/cmd/client.go
++++ b/cmd/client.go
+@@ -1,4 +1,4 @@
+-package main
++package hysteria
+ 
+ import (
+ 	"crypto/tls"
+diff --git a/cmd/completion.go b/cmd/completion.go
+index ea6bbed..8d1ff78 100644
+--- a/cmd/completion.go
++++ b/cmd/completion.go
+@@ -1,4 +1,4 @@
+-package main
++package hysteria
+ 
+ import (
+ 	"fmt"
+diff --git a/cmd/config.go b/cmd/config.go
+index 8de68ea..b519173 100644
+--- a/cmd/config.go
++++ b/cmd/config.go
+@@ -1,4 +1,4 @@
+-package main
++package hysteria
+ 
+ import (
+ 	"errors"
+diff --git a/cmd/config_test.go b/cmd/config_test.go
+index 11006ba..6966ceb 100644
+--- a/cmd/config_test.go
++++ b/cmd/config_test.go
+@@ -1,4 +1,4 @@
+-package main
++package hysteria
+ 
+ import "testing"
+ 
+diff --git a/cmd/kploader.go b/cmd/kploader.go
+index b71b3d0..8d6fced 100644
+--- a/cmd/kploader.go
++++ b/cmd/kploader.go
+@@ -1,4 +1,4 @@
+-package main
++package hysteria
+ 
+ import (
+ 	"crypto/tls"
+diff --git a/cmd/main.go b/cmd/main.go
+index bd53a30..57b125c 100644
+--- a/cmd/main.go
++++ b/cmd/main.go
+@@ -1,12 +1,14 @@
+-package main
++package hysteria
+ 
+ import (
+ 	"fmt"
+ 	"io/ioutil"
+ 	"math/rand"
+ 	"os"
++	"os/signal"
+ 	"regexp"
+ 	"strings"
++	"syscall"
+ 	"time"
+ 
+ 	nested "github.com/antonfisher/nested-logrus-formatter"
+@@ -32,6 +34,9 @@ var (
+ 	appDate    = "Unknown"
+ )
+ 
++// channel so we can exit gracefully
++var sigChan = make(chan os.Signal, 1)
++
+ var rootCmd = &cobra.Command{
+ 	Use:     "hysteria",
+ 	Long:    fmt.Sprintf("%s%s\n\nVersion:\t%s\nBuildDate:\t%s\nCommitHash:\t%s\nAuthors:\t%s", logo, desc, appVersion, appDate, appCommit, authors),
+@@ -80,6 +85,8 @@ var clientCmd = &cobra.Command{
+ 	Short:   "Run as client mode",
+ 	Example: "./hysteria client --config /etc/hysteria/client.json",
+ 	Run: func(cmd *cobra.Command, args []string) {
++		signal.Notify(sigChan, syscall.SIGTERM)
++
+ 		cbs, err := ioutil.ReadFile(viper.GetString("config"))
+ 		if err != nil {
+ 			logrus.WithFields(logrus.Fields{
+@@ -176,6 +183,40 @@ func init() {
+ 	viper.AutomaticEnv()
+ }
+ 
+-func main() {
+-	cobra.CheckErr(rootCmd.Execute())
++// func main() {
++// 	cobra.CheckErr(rootCmd.Execute())
++// }
++
++func Start(configJson *[]byte) {
++	// init code from rootCmd
++	rand.Seed(time.Now().UnixNano())
++	// log config
++	logrus.SetOutput(os.Stdout)
++	// XXX: 
++	logrus.SetLevel(logrus.DebugLevel)
++
++	logrus.SetFormatter(&nested.Formatter{
++		FieldsOrder: []string{
++			"version", "url",
++			"config", "file", "mode",
++			"addr", "src", "dst", "session", "action",
++			"retry", "interval",
++			"code", "msg", "error",
++		},
++		TimestampFormat: viper.GetString("log-timestamp"),
++	})
++
++	// client mode
++	cc, err := parseClientConfig(*configJson)
++	if err != nil {
++		logrus.WithFields(logrus.Fields{
++			"error": err,
++		}).Fatal("Failed to parse client configuration")
++	}
++	client(cc)
++}
++
++func Stop() {
++	logrus.Info("synthesizing SIGTERM because of explicit Stop call")
++	sigChan <- syscall.SIGTERM
+ }
+diff --git a/cmd/mmdb.go b/cmd/mmdb.go
+index 1370959..91f30ab 100644
+--- a/cmd/mmdb.go
++++ b/cmd/mmdb.go
+@@ -1,4 +1,4 @@
+-package main
++package hysteria
+ 
+ import (
+ 	"github.com/oschwald/geoip2-golang"
+diff --git a/cmd/resolver.go b/cmd/resolver.go
+index f60442d..4a6921c 100644
+--- a/cmd/resolver.go
++++ b/cmd/resolver.go
+@@ -1,4 +1,4 @@
+-package main
++package hysteria
+ 
+ import (
+ 	"context"
+diff --git a/cmd/server.go b/cmd/server.go
+index 5334ac2..d52bb3a 100644
+--- a/cmd/server.go
++++ b/cmd/server.go
+@@ -1,4 +1,4 @@
+-package main
++package hysteria
+ 
+ import (
+ 	"crypto/tls"
+diff --git a/cmd/update.go b/cmd/update.go
+index b972f3b..922042c 100644
+--- a/cmd/update.go
++++ b/cmd/update.go
+@@ -1,4 +1,4 @@
+-package main
++package hysteria
+ 
+ import (
+ 	"encoding/json"

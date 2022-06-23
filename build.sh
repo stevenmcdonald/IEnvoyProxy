@@ -1,11 +1,11 @@
 #!/bin/sh
 
 TARGET=ios,iossimulator,macos
-OUTPUT=IPtProxy.xcframework
+OUTPUT=IEnvoyProxy.xcframework
 
 if test "$1" = "android"; then
   TARGET=android
-  OUTPUT=IPtProxy.aar
+  OUTPUT=IEnvoyProxy.aar
 fi
 
 cd "$(dirname "$0")" || exit 1
@@ -20,14 +20,18 @@ printf '\n--- Golang 1.16 or up needs to be installed! Try "brew install go" on 
 printf '\n--- Installing gomobile...\n'
 go install golang.org/x/mobile/cmd/gomobile@latest
 
-# Fetch submodules obfs4 and snowflake.
-printf '\n\n--- Fetching Obfs4proxy and Snowflake dependencies...\n'
+# Fetch submodules.
+printf '\n\n--- Fetching submodule dependencies...\n'
 if test -e ".git"; then
     # There's a .git directory - we must be in the development pod.
     git submodule update --init --recursive
     cd obfs4 || exit 1
     git reset --hard
     cd ../snowflake || exit 1
+    git reset --hard
+    cd ../dnstt || exit 1
+    git reset --hard
+    cd ../hysteria || exit 1
     git reset --hard
     cd ..
 else
@@ -40,17 +44,27 @@ else
     cd snowflake || exit 1
     git checkout --force --quiet 4e7f8975
     cd ..
+    git clone https://www.bamsoftware.com/git/dnstt.git
+    cd dnstt || exit 1
+    git checkout --force --quiet 04f04590
+    cd ..
+    git clone https://github.com/HyNetwork/hysteria.git
+    cd hysteria || exit 1
+    git checkout --force --quiet da16c88
+    cd ..
 fi
 
 # Apply patches.
-printf '\n\n--- Apply patches to Obfs4proxy and Snowflake...\n'
+printf '\n\n--- Apply patches to submodules...\n'
 patch --directory=obfs4 --strip=1 < obfs4.patch
 patch --directory=snowflake --strip=1 < snowflake.patch
+patch --directory=dnstt --strip=1 < dnstt.patch
+patch --directory=hysteria --strip=1 < hysteria.patch
 
 # Compile framework.
 printf '\n\n--- Compile %s...\n' "$OUTPUT"
 export PATH=~/go/bin:$PATH
-cd IPtProxy.go || exit 1
+cd IEnvoyProxy || exit 1
 
 gomobile init
 
