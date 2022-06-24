@@ -449,11 +449,13 @@ type HysteriaListen struct {
 
 type HysteriaConfig struct {
 	Server		string			`json:"server"`
+	Protocol	string			`json:"protocol"`
 	Obfs		string			`json:"obfs"`
 	Socks5		HysteriaListen	`json:"socks5"`
 	Up_mbps		int				`json:"up_mbps"`
 	Down_mbps	int				`json:"down_mbps"`
 	Ca			string			`json:"ca"`
+	Alpn		string			`json:alpn`
 }
 
 // StartHysteria -- Start the Hysteria client
@@ -482,11 +484,13 @@ func StartHysteria(server, obfs, ca string) int {
 	listenConf := HysteriaListen{listenAddr}
 	conf := HysteriaConfig{
 		server,
+		"wechat-video"
 		obfs,
 		listenConf,
 		1000, // up_mbps
 		1000, // down_mbps
 		ca,
+		"Envoy",
 	}
 
 	confJson, err := json.Marshal(conf)
