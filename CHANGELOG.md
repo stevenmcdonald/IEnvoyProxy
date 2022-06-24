@@ -1,3 +1,13 @@
+# IEnvoyProxy Changlog
+
+## 1.0.1
+ - Ability to specify Hysteria protocol and ALPN
+
+## 1.0.0
+ - Forked from IPtProxy
+ - DNSTT support added
+ - Hysteria support added
+
 # IPtProxy Changelog
 
 ## 1.6.0
