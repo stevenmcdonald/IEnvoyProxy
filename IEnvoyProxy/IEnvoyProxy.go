@@ -484,7 +484,7 @@ func StartHysteria(server, obfs, ca string) int {
 	listenConf := HysteriaListen{listenAddr}
 	conf := HysteriaConfig{
 		server,
-		"wechat-video"
+		"wechat-video",
 		obfs,
 		listenConf,
 		1000, // up_mbps
