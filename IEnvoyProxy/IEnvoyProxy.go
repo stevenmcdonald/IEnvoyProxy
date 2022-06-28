@@ -405,12 +405,10 @@ func StopSnowflakeProxy() {
 //
 // @param pubkey The DNSTT's server public key (as hex digits).
 //
-// @param utlsDistribution OPTIONAL. What browser UAs to use (see DNSTT docs)
-//
 // @return Port number where Dnstt will listen on, if no error happens during start up.
 //
 //goland:noinspection GoUnusedExportedFunction
-func StartDnstt(ttDomain, dohURL, dotAddr, pubkey, utlsDistribution string) int {
+func StartDnstt(ttDomain, dohURL, dotAddr, pubkey string) int {
 	if dnsttRunning {
 		return dnsttPort
 	}
@@ -421,7 +419,17 @@ func StartDnstt(ttDomain, dohURL, dotAddr, pubkey, utlsDistribution string) int 
 		dnsttPort++
 	}
 
-	listenAddr := fmt.Sprintf("localhost:%d", dnsttPort)
+	// From the dnstt docs:
+	//
+	// In -doh and -dot modes, the program's TLS fingerprint is camouflaged with
+	// uTLS by default. The specific TLS fingerprint is selected randomly from a
+	// weighted distribution. You can set your own distribution (or specific single
+	// fingerprint) using the -utls option. The special value "none" disables uTLS.
+	//     -utls '3*Firefox,2*Chrome,1*iOS'
+	//     -utls Firefox
+	//     -utls none
+	var utlsDistribution = "3*Firefox,1*iOS"
+	var listenAddr = fmt.Sprintf("localhost:%d", dnsttPort)
 
 	fixEnv()
 

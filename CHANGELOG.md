@@ -1,5 +1,9 @@
 # IEnvoyProxy Changlog
 
+## 1.0.2
+ - utlsDistribution doesn't need to be passed in
+ - add default utlsDistribution to pass in to DNSTT
+
 ## 1.0.1
  - Ability to specify Hysteria protocol and ALPN
 
