@@ -3,7 +3,55 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
+  <packaging>aar</packaging>
   <groupId>org.greatfire</groupId>
   <artifactId>IEnvoyProxy</artifactId>
   <version>1.0.2</version>
+  <name>IEnvoyProxy</name>
+  <description>This is a fork of IPtProxy (https://github.com/tladesignz/IPtProxy) modified to include Go projects used by Envoy (https://github.com/greatfire/envoy)
+currently this includes: Snowflake, obfs4proxy, dnstt, Hysteria</description>
+  <url>https://greatfire.org</url>
+  <licenses>
+    <license>
+      <name>GPLv3-or-later</name>
+      <url>https://raw.githubusercontent.com/Yawning/obfs4/master/LICENSE-GPL3.txt</url>
+      <distribution>repo</distribution>
+    </license>
+    <license>
+      <name>MIT</name>
+      <url>https://github.com/tladesignz/IPtProxy/blob/master/LICENSE</url>
+      <distribution>repo</distribution>
+    </license>
+    <license>
+      <name>BSD-3-clause</name>
+      <url>https://gitlab.com/yawning/obfs4/-/blob/master/LICENSE</url>
+      <distribution>repo</distribution>
+    </license>
+    <license>
+      <name>BSD-3-clause</name>
+      <url>https://gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/-/blob/main/LICENSE</url>
+      <distribution>repo</distribution>
+    </license>
+    <license>
+      <name>BSD-2-clause</name>
+      <url>https://raw.githubusercontent.com/Yawning/obfs4/master/LICENSE</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <developers>
+    <developer>
+      <id>greatfire</id>
+      <name>GreatFire</name>
+      <email>support@greatfire.org</email>
+    </developer>
+    <developer>
+      <id>guardianproject</id>
+      <name>Guardian Project</name>
+      <email>support@guardianproject.info</email>
+    </developer>
+  </developers>
+  <scm>
+    <connection>scm:git:https://github.com/stevenmcdonald/IEnvoyProxy.git</connection>
+    <url>https://github.com/stevenmcdonald/IEnvoyProxy</url>
+  </scm>
 </project>
