@@ -1,21 +1,22 @@
 # IEnovyProxy
 
-This is a fork of IPtProxy (https://github.com/tladesignz/IPtProxy) modified to include Go projects used by Envoy (https://github.com/greatfire/envoy)
+This is a fork of IPtProxy (https://github.com/tladesignz/IPtProxy) modified to include censorship evadig proxies used by Envoy (https://github.com/greatfire/envoy)
 
 currently this includes:
 
-* Snowflake
-* obfs4proxy
+* Snowflake (not used by Envoy, likely to be removed)
+* obfs4proxy (not used by Envoy, might be removed)
 * DNSTT
 * Hysteria
-* V2ray (coming soon)
+* V2ray
 
-While this library was made for use with Envoy, it does not depend on Envoy, and may be useful for other situations.
+While this library was made for use with Envoy, it does not depend on Envoy, and may be useful for other situations. Some of the choices made are specific to our needs, but if others want to use this, we can look in to making it more flexible.
 
-iOS/MacOS version is not tested, but should work.
+Envoy only supports Android, so the iOS/MacOS version is not tested, but should work. None of the changes should cause compatability problems.
 
-See the comments in `IEnvoyProxy/IEnvoyProxy.go` for required and optional parameters for the various subprojects.
+See the comments in `IEnvoyProxy/IEnvoyProxy.go` for required and optional parameters for the various subprojects. (TODO document here)
 
+IEnvoyProxy is still a work in progress. Feel free to open issues in this repo if you have questions or comments.
 
 Original IPtProxy README content is below:
 
