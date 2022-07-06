@@ -33,6 +33,8 @@ if test -e ".git"; then
     git reset --hard
     cd ../hysteria || exit 1
     git reset --hard
+    cd ../v2ray-core || exit 1
+    get reset --hard
     cd ..
 else
     # No .git directory - That's a normal install.
@@ -51,6 +53,9 @@ else
     git clone https://github.com/HyNetwork/hysteria.git
     cd hysteria || exit 1
     git checkout --force --quiet da16c88
+    git clone https://github.com/v2fly/v2ray-core.git
+    cd v2ray-core || exit 1
+    git checkout --force --quiet b4069f74
     cd ..
 fi
 
@@ -60,6 +65,7 @@ patch --directory=obfs4 --strip=1 < obfs4.patch
 patch --directory=snowflake --strip=1 < snowflake.patch
 patch --directory=dnstt --strip=1 < dnstt.patch
 patch --directory=hysteria --strip=1 < hysteria.patch
+patch --directory=v2ray-core --strip=1 < v2ray-core.patch
 
 # Compile framework.
 printf '\n\n--- Compile %s...\n' "$OUTPUT"
