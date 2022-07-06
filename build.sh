@@ -34,7 +34,8 @@ if test -e ".git"; then
     cd ../hysteria || exit 1
     git reset --hard
     cd ../v2ray-core || exit 1
-    get reset --hard
+    git reset --hard
+    git clean -ffd
     cd ..
 else
     # No .git directory - That's a normal install.
