@@ -17,6 +17,7 @@ import (
 	"time"
 	dnsttclient "www.bamsoftware.com/git/dnstt.git/dnstt-client"
 	hysteria "github.com/tobyxdd/hysteria/cmd"
+	v2ray "github.com/v2fly/v2ray-core/envoy"
 )
 
 var meekPort = 47000
@@ -99,11 +100,29 @@ func HysteriaPort() int {
 	return hysteriaPort
 }
 
+
+var v2raySrtpPort = 47600
+var v2rayWechatPort = 47601
+var v2rayWsPort = 47602
+
+func V2raySrtpPort() int {
+	return v2raySrtpPort
+}
+
+func V2rayWechatPort() int {
+	return v2rayWechatPort
+}
+
+func V2rayWsPort() int {
+	return v2rayWsPort
+}
+
 var obfs4ProxyRunning = false
 var snowflakeRunning = false
 var snowflakeProxy *sfp.SnowflakeProxy
 var dnsttRunning = false
 var hysteriaRunning = false
+var v2rayRunning = false
 
 // StateLocation - Override TOR_PT_STATE_LOCATION, which defaults to "$TMPDIR/pt_state".
 var StateLocation string
@@ -415,9 +434,7 @@ func StartDnstt(ttDomain, dohURL, dotAddr, pubkey string) int {
 
 	dnsttRunning = true
 
-	for !IsPortAvailable(dnsttPort) {
-		dnsttPort++
-	}
+	dnsttPort = findPort(dnsttPort)
 
 	// From the dnstt docs:
 	//
@@ -481,9 +498,7 @@ func StartHysteria(server, obfs, ca string) int {
 
 	hysteriaRunning = true
 
-	for !IsPortAvailable(hysteriaPort) {
-		hysteriaPort++
-	}
+	hysteriaPort = findPort(hysteriaPort)
 
 	// Hysteria uses a JSON file for config, creating JSON
 	// to pass in seems like the path of least resistance
@@ -523,6 +538,63 @@ func StopHysteria() {
 	go hysteria.Stop()
 
 	hysteriaRunning = false
+}
+
+// StartV2ray -- Start v2ray client
+//
+// @param serverAddress - IP or hostname of the server for SRTP and wechat-video
+//
+// @param serverWsAddress - Hostname of WS web server proxy
+//
+// @param serverWsPort - port of the WS server (TLS is assumed, so probably 443)
+//
+// @param serverWsPath - websocket path (should be the same in the v2ray config and http proxy host)
+//
+// @param serverSrtpPort - port for (fake) SRTP connections
+//
+// @param serverWechatPort - port for (fake) Wechat video connections
+//
+// @param id - UUID for authentication with the server
+//
+// returns the client Websocket port, call the helper functions for the other ports
+//
+func StartV2Ray(serverAddress, serverWsAddress, serverWsPort, serverWsPath, serverSrtpPort, serverWechatPort, id string) int {
+	if v2rayRunning {
+		return v2rayWsPort
+	}
+
+	v2rayWsPort = findPort(v2rayWsPort)
+	v2raySrtpPort = findPort(v2rayWsPort + 1)
+	v2rayWechatPort = findPort(v2raySrtpPort + 1)
+
+	// convert to strings
+	wsport := strconv.Itoa(v2rayWsPort)
+	srtpport := strconv.Itoa(v2raySrtpPort)
+	wechatport := strconv.Itoa(v2rayWechatPort)
+
+	v2rayRunning = true
+
+	go v2ray.Start(&wsport, &srtpport, &wechatport, &serverAddress, &serverWsPort, &serverSrtpPort, &serverWechatPort, &serverWsPath, &id)
+
+	return v2rayWsPort
+}
+
+func StopV2ray() {
+	if !v2rayRunning {
+		return
+	}
+
+	go v2ray.Stop()
+
+	v2rayRunning = false
+}
+
+func findPort(port int) int {
+	temp := port
+	for !IsPortAvailable(temp) {
+		temp++
+	}
+	return temp
 }
 
 // IsPortAvailable - Checks to see if a given port is not in use.
