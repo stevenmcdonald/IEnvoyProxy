@@ -1,9 +1,6 @@
 [submodule "obfs4"]
 	path = obfs4
 	url = https://gitlab.com/yawning/obfs4.git
-[submodule "snowflake"]
-	path = snowflake
-	url = https://git.torproject.org/pluggable-transports/snowflake.git
 [submodule "dnstt"]
 	url = https://www.bamsoftware.com/git/dnstt.git
 	path = dnstt
