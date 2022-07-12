@@ -17,40 +17,13 @@ In all cases there is a Start() and Stop() (e.g. StartDnstt/StopDnstt) function 
 
 IEnvoyProxy is still a work in progress. Feel free to open issues in this repo if you have questions or comments.
 
-
-Original IPtProxy README content is below:
-
-# IPtProxy
-
-Obfs4proxy and Snowflake Pluggable Transports for iOS, MacOS and Android
-
-[![JitPack](https://jitpack.io/v/tladesignz/IPtProxy.svg)](https://jitpack.io/#tladesignz/IPtProxy)
-[![Version](https://img.shields.io/cocoapods/v/IPtProxy.svg?style=flat)](https://cocoapods.org/pods/IPtProxy)
-[![License](https://img.shields.io/cocoapods/l/IPtProxy.svg?style=flat)](https://cocoapods.org/pods/IPtProxy)
-[![Platform](https://img.shields.io/cocoapods/p/IPtProxy.svg?style=flat)](https://cocoapods.org/pods/IPtProxy)
-
-| Transport  | Version |
-|------------|--------:|
-| Obfs4proxy |  0.0.13 |
-| Snowflake  |   2.2.0 |
-
-Both Obfs4proxy and Snowflake Pluggable Transports are written in Go, which
-is a little annoying to use on iOS and Android.
-This project encapsulates all the machinations to make it work and provides an
-easy to install binary including a wrapper around both.
-
 Problems solved in particular are:
 
 - One cannot compile `main` packages with `gomobile`. Both PTs are patched
   to avoid this.
-- Both PTs are gathered under one roof here, since you cannot have two
+- Proxies are gathered under one roof here, since you cannot have two
   `gomobile` frameworks as dependencies, since there are some common Go
   runtime functions exported, which would create a name clash.
-- Environment variable changes during runtime will not be recognized by
-  `goptlib` when done from within Swift/Objective-C. Therefore, sensible
-  values are hardcoded in the Go wrapper.
-- Snowflake and Obfs4proxy are patched to accept all configuration parameters
-  directly.
 - Free ports to be used are automatically found by this library and returned to the
   consuming app. You can use the initial values for premature configuration just
   fine in situations, where you can be pretty sure, they're going to be available
@@ -60,31 +33,17 @@ Problems solved in particular are:
 
 ## iOS/macOS
 
-### Installation
-
-IPtProxy is available through [CocoaPods](https://cocoapods.org). To install
-it, simply add the following line to your `Podfile`:
-
-```ruby
-pod 'IPtProxy', '~> 1.6'
-```
-
-### Getting Started
-
-There's a companion library [IPtProxyUI](https://github.com/tladesignz/IPtProxyUI)
-which explains the use of IPtProxy and provides all the necessary UI and additional 
-information to use this library completely in a Tor context.
-
+IEnvoyProxy has not been tested on iOS/macOS. It should build and run, but it hasn't been tested. Let us know if you're interested in using this on iOS or macOS.
 
 ## Android 
 
 ### Installation
 
-IPtProxy is available through [JitPack](https://jitpack.io). To install
+IEnvoyProxy is available through [JitPack](https://jitpack.io). To install
 it, simply add the following line to your `build.gradle` file:
 
 ```groovy
-implementation 'com.github.tladesignz:IPtProxy:1.6.0'
+implementation 'org.greatfire:IEnvoyProxy:1.1.0'
 ```
 
 And this to your root `build.gradle` at the end of repositories:
@@ -113,6 +72,8 @@ dependencyResolutionManagement {
 }
 ```
 
+Precomiled binaries are also available on the [releases page](https://github.com/stevenmcdonald/IEnvoyProxy/releases)
+
 ### Getting Started
 
 If you are building a new Android application be sure to declare that it uses the
@@ -128,7 +89,7 @@ If you are building a new Android application be sure to declare that it uses th
 
 ```
 
-Before using IPtProxy you need to specify a place on disk for it to store its state
+Before using IEnvoyProxy you need to specify a place on disk for it to store its state
 information. We recommend the path returned by `Context#getCacheDir()`:
 
 ```java
@@ -144,8 +105,7 @@ IPtProxy.setStateLocation(fileCacheDir.getAbsolutePath());
 
 ### Requirements
 
-This repository contains a precompiled iOS and Android version of IPtProxy.
-If you want to compile it yourself, you'll need Go 1.16 as a prerequisite.
+You'll need Go 1.18 as a prerequisite.
 
 You will also need Xcode installed when compiling for iOS and an Android NDK
 when compiling for Android.
@@ -165,10 +125,10 @@ export PATH=$HOME/go/bin/:$PATH`
 Make sure Xcode and Xcode's command line tools are installed. Then run
 
 ```bash
-rm -rf IPtProxy.xcframework && ./build.sh
+rm -rf IEnvoyProxy.xcframework && ./build.sh
 ```
 
-This will create an `IPtProxy.xcframework`, which you can directly drop in your app,
+This will create an `IEnvoyProxy.xcframework`, which you can directly drop in your app,
 if you don't want to rely on CocoaPods.
 
 ### Android
@@ -186,10 +146,10 @@ environment variables are set:
 export ANDROID_HOME=~/Android/Sdk
 export ANDROID_NDK_HOME=$ANDROID_HOME/ndk/$NDK_VERSION
 
-rm -rf IPtProxy.aar IPtProxy-sources.jar && ./build.sh android
+rm -rf IEnvoyProxy.aar IEnvoyProxy-sources.jar && ./build.sh android
 ```
 
-This will create an `IPtProxy.aar` file, which you can directly drop in your app, 
+This will create an `IEnvoyProxy.aar` file, which you can directly drop in your app, 
 if you don't want to rely on JitPack.
 
 On certain CPU architectures `gobind` might fail with this error due to setting
@@ -201,7 +161,7 @@ unsupported setting GO386=387. Consider using GO386=softfloat instead.
 gomobile: go build -v -buildmode=c-shared -o=/tmp/gomobile-work-855414073/android/src/main/jniLibs/x86/libgojni.so ./gobind failed: exit status 1
 ```
 
-If this is the case, you will need to set this flag to build IPtProxy:
+If this is the case, you will need to set this flag to build IEnvoyProxy:
 
 ```bash
 export GO386=sse2
@@ -209,6 +169,12 @@ export GO386=sse2
 
 
 ## Authors
+
+- Steven McDonald, scm@eds.org
+
+for GreatFire https://en.greatfire.org/
+
+### IPtProxy Authors:
 
 - Benjamin Erhart, berhart@netzarchitekten.com
 - Nathan Freitas
@@ -218,4 +184,4 @@ for the Guardian Project https://guardianproject.info
 
 ## License
 
-IPtProxy is available under the MIT license. See the [LICENSE](LICENSE) file for more info.
+IEnvoyProxy is available under the MIT license. See the [LICENSE](LICENSE) file for more info.
