@@ -149,3 +149,8 @@ iOSInjectionProject/
 
 # Vagrant
 .vagrant
+
+## IEnvoyProxy binaries
+IEnvoyProxy-sources.jar
+IEnvoyProxy.aar
+IEnvoyProxy.xcframework
