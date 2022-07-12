@@ -25,6 +25,7 @@ require (
 	github.com/v2fly/v2ray-core/v5 v5.0.7 // indirect
 	gitlab.com/yawning/obfs4.git v0.0.0-20220204003609-77af0cba934d
 	golang.org/x/crypto v0.0.0-20220516162934-403b01795ae8 // indirect
+	golang.org/x/mobile v0.0.0-20220518205345-8578da9835fd // indirect
 	golang.org/x/tools v0.1.8-0.20211022200916-316ba0b74098 // indirect
 	www.bamsoftware.com/git/dnstt.git v0.0.0-00010101000000-000000000000
 )
