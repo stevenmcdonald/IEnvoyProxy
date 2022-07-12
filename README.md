@@ -4,19 +4,19 @@ This is a fork of IPtProxy (https://github.com/tladesignz/IPtProxy) modified to 
 
 currently this includes:
 
-* Snowflake (not used by Envoy, likely to be removed)
 * obfs4proxy (not used by Envoy, might be removed)
-* DNSTT
-* Hysteria
-* V2ray
+* [DNSTT](https://www.bamsoftware.com/software/dnstt/)
+* [Hysteria](https://github.com/HyNetwork/hysteria)
+* [V2ray](https://github.com/v2fly/v2ray-core)
 
 While this library was made for use with Envoy, it does not depend on Envoy, and may be useful for other situations. Some of the choices made are specific to our needs, but if others want to use this, we can look in to making it more flexible.
 
 Envoy only supports Android, so the iOS/MacOS version is not tested, but should work. None of the changes should cause compatability problems.
 
-See the comments in `IEnvoyProxy/IEnvoyProxy.go` for required and optional parameters for the various subprojects. (TODO document here)
+In all cases there is a Start() and Stop() (e.g. StartDnstt/StopDnstt) function for each service. There are also accessors to get the port each service is listening on (unused ports are selected at startup time, so these functions are only reliable after the service is started), e.g. DnstttPort(). Obfs4proxy and V2ray use multiple ports, so there are multiple accessors, see the code in `IEnvoyProxy/IEnvoyProxy.go` for details.
 
 IEnvoyProxy is still a work in progress. Feel free to open issues in this repo if you have questions or comments.
+
 
 Original IPtProxy README content is below:
 

@@ -1,5 +1,10 @@
 # IEnvoyProxy Changlog
 
+## 1.1.0
+ - V2ray support
+ - remove binaries from the repo
+ - remove snowflake
+
 ## 1.0.2
  - utlsDistribution doesn't need to be passed in
  - add default utlsDistribution to pass in to DNSTT

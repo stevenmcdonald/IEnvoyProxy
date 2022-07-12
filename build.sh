@@ -27,8 +27,6 @@ if test -e ".git"; then
     git submodule update --init --recursive
     cd obfs4 || exit 1
     git reset --hard
-    cd ../snowflake || exit 1
-    git reset --hard
     cd ../dnstt || exit 1
     git reset --hard
     cd ../hysteria || exit 1
@@ -42,10 +40,6 @@ else
     git clone https://gitlab.com/yawning/obfs4.git
     cd obfs4 || exit 1
     git checkout --force --quiet 77af0cba
-    cd ..
-    git clone https://git.torproject.org/pluggable-transports/snowflake.git
-    cd snowflake || exit 1
-    git checkout --force --quiet 4e7f8975
     cd ..
     git clone https://www.bamsoftware.com/git/dnstt.git
     cd dnstt || exit 1
@@ -63,7 +57,6 @@ fi
 # Apply patches.
 printf '\n\n--- Apply patches to submodules...\n'
 patch --directory=obfs4 --strip=1 < obfs4.patch
-patch --directory=snowflake --strip=1 < snowflake.patch
 patch --directory=dnstt --strip=1 < dnstt.patch
 patch --directory=hysteria --strip=1 < hysteria.patch
 patch --directory=v2ray-core --strip=1 < v2ray-core.patch
