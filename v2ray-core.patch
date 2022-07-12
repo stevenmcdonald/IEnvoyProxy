@@ -1,12 +1,12 @@
- envoy/v2ray.go | 331 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 331 insertions(+)
+ envoy/v2ray.go | 334 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 334 insertions(+)
 
 diff --git a/envoy/v2ray.go b/envoy/v2ray.go
 new file mode 100644
-index 00000000..09e55587
+index 00000000..a96b3a5d
 --- /dev/null
 +++ b/envoy/v2ray.go
-@@ -0,0 +1,331 @@
+@@ -0,0 +1,334 @@
 +package v2ray
 +
 +// copied and modified from main/commands/run.go
@@ -330,7 +330,10 @@ index 00000000..09e55587
 +
 +	defer server.Close()
 +
-+	signal.Notify(osSignals, os.Interrupt, syscall.SIGTERM)
++	{
++		signal.Notify(osSignals, os.Interrupt, syscall.SIGTERM)
++		<-osSignals
++	}
 +
 +	return nil
 +}
