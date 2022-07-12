@@ -3,20 +3,15 @@ package IEnvoyProxy
 import (
 	"fmt"
 	"encoding/json"
-	snowflakeclient "git.torproject.org/pluggable-transports/snowflake.git/v2/client"
-	"git.torproject.org/pluggable-transports/snowflake.git/v2/common/safelog"
-	sfp "git.torproject.org/pluggable-transports/snowflake.git/v2/proxy/lib"
 	"gitlab.com/yawning/obfs4.git/obfs4proxy"
-	"io"
-	"log"
 	"net"
 	"os"
 	"runtime"
-	"runtime/debug"
 	"strconv"
 	"time"
 	dnsttclient "www.bamsoftware.com/git/dnstt.git/dnstt-client"
 	hysteria "github.com/tobyxdd/hysteria/cmd"
+	v2ray "github.com/v2fly/v2ray-core/envoy"
 )
 
 var meekPort = 47000
@@ -69,16 +64,6 @@ func ScramblesuitPort() int {
 	return scramblesuitPort
 }
 
-var snowflakePort = 52000
-
-// SnowflakePort - Port where Snowflake will provide its service.
-// Only use this property after calling StartSnowflake! It might have changed after that!
-//
-//goland:noinspection GoUnusedExportedFunction
-func SnowflakePort() int {
-	return snowflakePort
-}
-
 var dnsttPort = 57000
 
 // DnsttPort - Port where Dnstt will provide its service.
@@ -99,11 +84,27 @@ func HysteriaPort() int {
 	return hysteriaPort
 }
 
+
+var v2raySrtpPort = 47600
+var v2rayWechatPort = 47601
+var v2rayWsPort = 47602
+
+func V2raySrtpPort() int {
+	return v2raySrtpPort
+}
+
+func V2rayWechatPort() int {
+	return v2rayWechatPort
+}
+
+func V2rayWsPort() int {
+	return v2rayWsPort
+}
+
 var obfs4ProxyRunning = false
-var snowflakeRunning = false
-var snowflakeProxy *sfp.SnowflakeProxy
 var dnsttRunning = false
 var hysteriaRunning = false
+var v2rayRunning = false
 
 // StateLocation - Override TOR_PT_STATE_LOCATION, which defaults to "$TMPDIR/pt_state".
 var StateLocation string
@@ -124,29 +125,6 @@ func init() {
 //goland:noinspection GoUnusedExportedFunction
 func Obfs4ProxyVersion() string {
 	return obfs4proxy.Obfs4proxyVersion
-}
-
-// SnowflakeVersion  - The version of Snowflake bundled with IPtProxy.
-//
-//goland:noinspection GoUnusedExportedFunction
-func SnowflakeVersion() string {
-	bi, ok := debug.ReadBuildInfo()
-	if !ok {
-		log.Printf("Failed to read build info")
-		return ""
-	}
-
-	for _, dep := range bi.Deps {
-		if dep.Path == "git.torproject.org/pluggable-transports/snowflake.git/v2" {
-			if dep.Version[0:1] == "v" {
-				return dep.Version[1:len(dep.Version)]
-			} else {
-				return dep.Version
-			}
-		}
-	}
-
-	return ""
 }
 
 // StartObfs4Proxy - Start the Obfs4Proxy.
@@ -235,166 +213,6 @@ func StopObfs4Proxy() {
 	obfs4ProxyRunning = false
 }
 
-// StartSnowflake - Start the Snowflake client.
-//
-// @param ice Comma-separated list of ICE servers.
-//
-// @param url URL of signaling broker.
-//
-// @param front Front domain.
-//
-// @param ampCache OPTIONAL. URL of AMP cache to use as a proxy for signaling.
-//        Only needed when you want to do the rendezvous over AMP instead of a domain fronted server.
-//
-// @param logFile Name of log file. OPTIONAL. Defaults to no log.
-//
-// @param logToStateDir Resolve the log file relative to Tor's PT state dir.
-//
-// @param keepLocalAddresses Keep local LAN address ICE candidates.
-//
-// @param unsafeLogging Prevent logs from being scrubbed.
-//
-// @param maxPeers Capacity for number of multiplexed WebRTC peers. DEFAULTs to 1 if less than that.
-//
-// @return Port number where Snowflake will listen on, if no error happens during start up.
-//
-//goland:noinspection GoUnusedExportedFunction
-func StartSnowflake(ice, url, front, ampCache, logFile string, logToStateDir, keepLocalAddresses, unsafeLogging bool, maxPeers int) int {
-	if snowflakeRunning {
-		return snowflakePort
-	}
-
-	snowflakeRunning = true
-
-	for !IsPortAvailable(snowflakePort) {
-		snowflakePort++
-	}
-
-	fixEnv()
-
-	go snowflakeclient.Start(&snowflakePort, &ice, &url, &front, &ampCache, &logFile, &logToStateDir, &keepLocalAddresses, &unsafeLogging, &maxPeers)
-
-	return snowflakePort
-}
-
-// StopSnowflake - Stop the Snowflake client.
-//
-//goland:noinspection GoUnusedExportedFunction
-func StopSnowflake() {
-	if !snowflakeRunning {
-		return
-	}
-
-	go snowflakeclient.Stop()
-
-	snowflakeRunning = false
-}
-
-// SnowflakeClientConnected - Interface to use when clients connect
-// to the snowflake proxy. For use with StartSnowflakeProxy
-type SnowflakeClientConnected interface {
-	// Connected - callback method to handle snowflake proxy client connections.
-	Connected()
-}
-
-// StartSnowflakeProxy - Start the Snowflake proxy.
-//
-// @param capacity Maximum concurrent clients. OPTIONAL. Defaults to 10, if 0.
-//
-// @param broker Broker URL. OPTIONAL. Defaults to https://snowflake-broker.torproject.net/, if empty.
-//
-// @param relay WebSocket relay URL. OPTIONAL. Defaults to wss://snowflake.bamsoftware.com/, if empty.
-//
-// @param stun STUN URL. OPTIONAL. Defaults to stun:stun.stunprotocol.org:3478, if empty.
-//
-// @param natProbe OPTIONAL. Defaults to https://snowflake-broker.torproject.net:8443/probe, if empty.
-//
-// @param logFile Name of log file. OPTIONAL. Defaults to STDERR.
-//
-// @param keepLocalAddresses Keep local LAN address ICE candidates.
-//
-// @param unsafeLogging Prevent logs from being scrubbed.
-//
-// @param clientConnected A delegate which is called when a client successfully connected.
-//       Will be called on its own thread! You will need to switch to your own UI thread,
-//       if you want to do UI stuff!! OPTIONAL
-//
-//goland:noinspection GoUnusedExportedFunction
-func StartSnowflakeProxy(capacity int, broker, relay, stun, natProbe, logFile string, keepLocalAddresses, unsafeLogging bool, clientConnected SnowflakeClientConnected) {
-	if snowflakeProxy != nil {
-		return
-	}
-
-	if capacity < 1 {
-		capacity = 0
-	}
-
-	snowflakeProxy = &sfp.SnowflakeProxy{
-		Capacity:           uint(capacity),
-		STUNURL:            stun,
-		BrokerURL:          broker,
-		KeepLocalAddresses: keepLocalAddresses,
-		RelayURL:           relay,
-		NATProbeURL:        natProbe,
-		ProxyType:          "iptproxy",
-		ClientConnectedCallback: func() {
-			if clientConnected != nil {
-				clientConnected.Connected()
-			}
-		},
-	}
-
-	fixEnv()
-
-	go func(snowflakeProxy *sfp.SnowflakeProxy) {
-		var logOutput io.Writer = os.Stderr
-		log.SetFlags(log.LstdFlags | log.LUTC)
-
-		if logFile != "" {
-			f, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
-			if err != nil {
-				log.Fatal(err)
-			}
-			defer func(f *os.File) {
-				_ = f.Close()
-			}(f)
-			logOutput = io.MultiWriter(os.Stderr, f)
-		}
-		if unsafeLogging {
-			log.SetOutput(logOutput)
-		} else {
-			log.SetOutput(&safelog.LogScrubber{Output: logOutput})
-		}
-
-		err := snowflakeProxy.Start()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}(snowflakeProxy)
-}
-
-// IsSnowflakeProxyRunning - Checks to see if a snowflake proxy is running in your app.
-//
-//goland:noinspection GoUnusedExportedFunction
-func IsSnowflakeProxyRunning() bool {
-	return snowflakeProxy != nil
-}
-
-// StopSnowflakeProxy - Stop the Snowflake proxy.
-//
-//goland:noinspection GoUnusedExportedFunction
-func StopSnowflakeProxy() {
-	if snowflakeProxy == nil {
-		return
-	}
-
-	go func(snowflakeProxy *sfp.SnowflakeProxy) {
-		snowflakeProxy.Stop()
-	}(snowflakeProxy)
-
-	snowflakeProxy = nil
-}
-
 // StartDnstt - Start the Dnstt client.
 //
 // @param ttDomain	subdomain name for DNSTT
@@ -415,9 +233,7 @@ func StartDnstt(ttDomain, dohURL, dotAddr, pubkey string) int {
 
 	dnsttRunning = true
 
-	for !IsPortAvailable(dnsttPort) {
-		dnsttPort++
-	}
+	dnsttPort = findPort(dnsttPort)
 
 	// From the dnstt docs:
 	//
@@ -481,9 +297,7 @@ func StartHysteria(server, obfs, ca string) int {
 
 	hysteriaRunning = true
 
-	for !IsPortAvailable(hysteriaPort) {
-		hysteriaPort++
-	}
+	hysteriaPort = findPort(hysteriaPort)
 
 	// Hysteria uses a JSON file for config, creating JSON
 	// to pass in seems like the path of least resistance
@@ -525,6 +339,63 @@ func StopHysteria() {
 	hysteriaRunning = false
 }
 
+// StartV2ray -- Start v2ray client
+//
+// @param serverAddress - IP or hostname of the server for SRTP and wechat-video
+//
+// @param serverWsAddress - Hostname of WS web server proxy
+//
+// @param serverWsPort - port of the WS server (TLS is assumed, so probably 443)
+//
+// @param serverWsPath - websocket path (should be the same in the v2ray config and http proxy host)
+//
+// @param serverSrtpPort - port for (fake) SRTP connections
+//
+// @param serverWechatPort - port for (fake) Wechat video connections
+//
+// @param id - UUID for authentication with the server
+//
+// returns the client Websocket port, call the helper functions for the other ports
+//
+func StartV2Ray(serverAddress, serverWsAddress, serverWsPort, serverWsPath, serverSrtpPort, serverWechatPort, id string) int {
+	if v2rayRunning {
+		return v2rayWsPort
+	}
+
+	v2rayWsPort = findPort(v2rayWsPort)
+	v2raySrtpPort = findPort(v2rayWsPort + 1)
+	v2rayWechatPort = findPort(v2raySrtpPort + 1)
+
+	// convert to strings
+	wsport := strconv.Itoa(v2rayWsPort)
+	srtpport := strconv.Itoa(v2raySrtpPort)
+	wechatport := strconv.Itoa(v2rayWechatPort)
+
+	v2rayRunning = true
+
+	go v2ray.Start(&wsport, &srtpport, &wechatport, &serverAddress, &serverWsPort, &serverSrtpPort, &serverWechatPort, &serverWsPath, &id)
+
+	return v2rayWsPort
+}
+
+func StopV2ray() {
+	if !v2rayRunning {
+		return
+	}
+
+	go v2ray.Stop()
+
+	v2rayRunning = false
+}
+
+func findPort(port int) int {
+	temp := port
+	for !IsPortAvailable(temp) {
+		temp++
+	}
+	return temp
+}
+
 // IsPortAvailable - Checks to see if a given port is not in use.
 //
 // @param port The port to check.
@@ -552,7 +423,7 @@ func IsPortAvailable(port int) bool {
 // time this is called. It's still the ENVIRONMENT, we're changing here, so there might
 // be race conditions.
 func fixEnv() {
-	_ = os.Setenv("TOR_PT_CLIENT_TRANSPORTS", "meek_lite,obfs2,obfs3,obfs4,scramblesuit,snowflake,dnstt")
+	_ = os.Setenv("TOR_PT_CLIENT_TRANSPORTS", "meek_lite,obfs2,obfs3,obfs4,scramblesuit")
 	_ = os.Setenv("TOR_PT_MANAGED_TRANSPORT_VER", "1")
 
 	_ = os.Setenv("TOR_PT_STATE_LOCATION", StateLocation)

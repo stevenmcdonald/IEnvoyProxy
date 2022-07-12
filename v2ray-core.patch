@@ -1,0 +1,343 @@
+ envoy/v2ray.go | 334 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 334 insertions(+)
+
+diff --git a/envoy/v2ray.go b/envoy/v2ray.go
+new file mode 100644
+index 00000000..a96b3a5d
+--- /dev/null
++++ b/envoy/v2ray.go
+@@ -0,0 +1,334 @@
++package v2ray
++
++// copied and modified from main/commands/run.go
++
++// feeding core.LoadConfig with a string reader containing the config
++// JSON seems the simplest way to run v2ray as a library
++//
++// Golang's JSON support seems a little cumbersome for a couple
++// string substitutions in a complex JSON snippet, so we just
++// use fmt.Sprintf to assemble the config
++//
++// The JSON file we build should look similar to the client example config
++// (that will be) documented here:
++// https://gitlab.com/stevenmcdonald/envoy-proxy-examples/v2ray/
++
++import (
++	"fmt"
++	"os"
++	"os/signal"
++	"strings"
++	"syscall"
++
++	core "github.com/v2fly/v2ray-core/v5"
++	_ "github.com/v2fly/v2ray-core/v5/main/distro/all"
++)
++
++type V2RayEnvoyConfig struct {
++	ServerAddress		string
++	ServerSRTPPort		string
++	ServerWechatPort	string
++	ServerWSPort		string
++	ServerWSPath		string
++	ClientSRTPPort		string
++	ClientWechatPort	string
++	ClientWSPort		string
++	Id					string
++}
++
++var osSignals = make(chan os.Signal, 1)
++
++// getInbound
++//
++// @param port - port to listen for SOCKS5 connections
++//
++func getInbound(clientPort *string) string {
++	inbound := fmt.Sprintf(`
++    {
++      "port": %s,
++      "protocol": "socks",
++      "sniffing": {
++        "enabled": true,
++        "destOverride": ["http", "tls"]
++      },
++      "settings": {
++        "auth": "noauth"
++      }
++    }
++		`, *clientPort)
++
++	return inbound
++}
++
++// getSrtpOutbound
++//
++// @param address - Server name or IP address
++//
++// @param port - Server port
++//
++// @param id - UUID to authorize with server
++//
++func getSrtpOutbound(config *V2RayEnvoyConfig) string {
++	outbound := fmt.Sprintf(`
++	{
++      "protocol": "vmess",
++      "settings": {
++        "vnext": [
++          {
++            "address": "%s",
++            "port": %s,
++            "users": [
++              {
++                "id": "%s",
++                "alterId": 0
++              }
++            ]
++          }
++        ]
++      },
++      "streamSettings": {
++        "network": "quic",
++        "quicSettings": {
++          "security": "aes-128-gcm",
++          "header": {
++            "type": "srtp"
++          },
++          "key": "0"
++        }
++      }
++    }
++		`, config.ServerAddress, config.ServerSRTPPort, config.Id)
++
++	return outbound
++}
++
++// getWechatOutbound
++//
++// @param address - Server name or IP address
++//
++// @param port - Server port
++//
++// @param id - UUID to authorize with server
++//
++func getWechatOutbound(config *V2RayEnvoyConfig) string {
++	outbound := fmt.Sprintf(`
++	{
++      "protocol": "vmess",
++      "settings": {
++        "vnext": [
++          {
++            "address": "%s",
++            "port": %s,
++            "users": [
++              {
++                "id": "%s",
++                "alterId": 0
++              }
++            ]
++          }
++        ]
++      },
++      "streamSettings": {
++        "network": "quic",
++        "quicSettings": {
++          "security": "aes-128-gcm",
++          "header": {
++            "type": "wechat-video"
++          },
++          "key": "0"
++        }
++      }
++    }
++		`, config.ServerAddress, config.ServerSRTPPort, config.Id)
++
++	return outbound
++}
++
++func getTLSWebsocketOutbound(config *V2RayEnvoyConfig) string {
++	outbound := fmt.Sprintf(`
++		{
++      "protocol": "vmess",
++      "settings": {
++        "vnext": [
++          {
++            "address": "%s",
++            "port": %s,
++            "users": [
++              {
++                "id": "%s",
++                "alterId": 0
++              }
++            ]
++          }
++        ]
++      },
++      "streamSettings": {
++        "network": "ws",
++        "security": "tls",
++        "wsSettings": {
++          "path": "%s"
++        }
++      }
++    }
++		`, config.ServerAddress, config.ServerWSPort, config.Id, config.ServerWSPath)
++
++	return outbound
++}
++
++func getOutbounds(config *V2RayEnvoyConfig) string {
++	srtpOutbound := getSrtpOutbound(config)
++	wechatOutbound := getWechatOutbound(config)
++	wsOutbound := getTLSWebsocketOutbound(config)
++
++	outbounds := fmt.Sprintf(`
++	"outbounds": [
++		%s,
++		%s,
++		%s
++	]
++	`, srtpOutbound, wechatOutbound, wsOutbound)
++
++	return outbounds
++}
++
++func getInbounds(config *V2RayEnvoyConfig) string {
++	inbounds := fmt.Sprintf(`
++		"inbounds": [
++    {
++      "tag": "ws_in",
++      "port": %s,
++      "protocol": "socks",
++      "settings": {
++        "auth": "noauth"
++      }
++    },
++    {
++      "tag": "srtp_in",
++      "port": %s,
++      "protocol": "socks",
++      "settings": {
++        "auth": "noauth"
++      }
++    },
++    {
++      "tag": "wechat_in",
++      "port": %s,
++      "protocol": "socks",
++      "settings": {
++        "auth": "noauth"
++      }
++    }
++  ]
++  `, config.ClientWSPort, config.ClientSRTPPort, config.ClientWechatPort)
++
++  return inbounds
++}
++
++//
++// Routing is set such that e.g. the "ClientSRTPPort" is routed to the 
++// "ServerSRTPPort"... v2ray's internal routing doesn't handle e.g. some
++// outbounds not working, so we make them effectivly indpenedent
++// and let Envoy sort out which ones work.
++func getConfig(config *V2RayEnvoyConfig) string {
++
++	inbounds := getInbounds(config)
++	outbounds := getOutbounds(config)
++
++	jsonConfig := fmt.Sprintf(`
++{
++  "log": {
++    "loglevel": "debug" // set to debug for more console output
++  },
++  %s,
++  %s,
++  "routing": {
++    "domainStrategy": "AsIs",
++    "rules": [
++      {
++        "inboundTag": ["ws_in"],
++        "outboundTag": "ws_out",
++        "type": "field"
++      },
++      {
++        "inboundTag": ["srtp_in"],
++        "outboundTag": "srtp_out",
++        "type": "field"
++      },
++      {
++        "inboundTag": ["wechat_in"],
++        "outboundTag": "wechat_out",
++        "type": "field"
++      }
++    ]
++  }
++}
++`, inbounds, outbounds)
++
++	return jsonConfig
++}
++
++// Start - start v2ray
++//
++// @param wsPort - client SOCKS port routed to the WS server
++//
++// @param srtpPort - client SOCKS port routed to the SRTP server
++//
++// @param wechatPort - client SOCKS port routed to the wechat-video server
++//
++// @param serverAddress - IP or hostname of the server
++//
++// @param serverWsPort - port of the websocket server (probably 443)
++//
++// @param serverSrtpPort - port of the SRTP server
++//
++// @param serverWechatPort - port of the wechat-video server
++//
++// @param id - UUID used to authenticate with the server
++//
++func Start(wsPort, srtpPort, wechatPort, serverAddress, serverWsPort, serverSrtpPort, serverWechatPort, wsPath, id *string) error {
++	config := V2RayEnvoyConfig{
++		*serverAddress,
++		*serverSrtpPort,
++		*serverWechatPort,
++		*serverWsPort,
++		*wsPath,
++		*srtpPort,
++		*wechatPort,
++		*wsPort,
++		*id,
++    }
++
++	configJSON := getConfig(&config)
++
++	// fmt.Println(configJSON)
++
++	reader := strings.NewReader(configJSON)
++	clientConfig, err := core.LoadConfig(core.FormatJSON, reader)
++	if err != nil {
++		fmt.Println("error reading config: %s", err)
++		return err
++	}
++
++	server, err := core.New(clientConfig)
++	if err != nil {
++		fmt.Println("error creating server: %s", err)
++		return err
++	}
++
++	if err := server.Start(); err != nil {
++		fmt.Println("failed to start %s", err)
++	}
++
++	defer server.Close()
++
++	{
++		signal.Notify(osSignals, os.Interrupt, syscall.SIGTERM)
++		<-osSignals
++	}
++
++	return nil
++}
++
++func Stop() {
++	osSignals <- syscall.SIGTERM
++}
