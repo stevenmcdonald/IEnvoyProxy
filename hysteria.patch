@@ -1,5 +1,5 @@
  cmd/acme.go        |  2 +-
- cmd/client.go      |  2 +-
+ cmd/client.go      | 31 ++++++++++++++++---------------
  cmd/completion.go  |  2 +-
  cmd/config.go      |  2 +-
  cmd/config_test.go |  2 +-
@@ -9,7 +9,7 @@
  cmd/resolver.go    |  2 +-
  cmd/server.go      |  2 +-
  cmd/update.go      |  2 +-
- 11 files changed, 54 insertions(+), 13 deletions(-)
+ 11 files changed, 69 insertions(+), 27 deletions(-)
 
 diff --git a/cmd/acme.go b/cmd/acme.go
 index c4cf196..c56e852 100644
@@ -22,7 +22,7 @@ index c4cf196..c56e852 100644
  import (
  	"context"
 diff --git a/cmd/client.go b/cmd/client.go
-index 69b3ec6..aa826b7 100644
+index 69b3ec6..8d17d7f 100644
 --- a/cmd/client.go
 +++ b/cmd/client.go
 @@ -1,4 +1,4 @@
@@ -31,6 +31,131 @@ index 69b3ec6..aa826b7 100644
  
  import (
  	"crypto/tls"
+@@ -55,13 +55,13 @@ func client(config *clientConfig) {
+ 			logrus.WithFields(logrus.Fields{
+ 				"error": err,
+ 				"file":  config.CustomCA,
+-			}).Fatal("Failed to load CA")
++			}).Error("Failed to load CA")
+ 		}
+ 		cp := x509.NewCertPool()
+ 		if !cp.AppendCertsFromPEM(bs) {
+ 			logrus.WithFields(logrus.Fields{
+ 				"file": config.CustomCA,
+-			}).Fatal("Failed to parse CA")
++			}).Error("Failed to parse CA")
+ 		}
+ 		tlsConfig.RootCAs = cp
+ 	}
+@@ -104,7 +104,7 @@ func client(config *clientConfig) {
+ 		if err != nil {
+ 			logrus.WithFields(logrus.Fields{
+ 				"error": err,
+-			}).Fatal("Failed to parse the resolve preference")
++			}).Error("Failed to parse the resolve preference")
+ 		}
+ 		transport.DefaultClientTransport.PrefEnabled = true
+ 		transport.DefaultClientTransport.PrefIPv6 = pref
+@@ -126,7 +126,7 @@ func client(config *clientConfig) {
+ 			logrus.WithFields(logrus.Fields{
+ 				"error": err,
+ 				"file":  config.ACL,
+-			}).Fatal("Failed to parse ACL")
++			}).Error("Failed to parse ACL")
+ 		}
+ 	}
+ 	// Client
+@@ -149,7 +149,8 @@ func client(config *clientConfig) {
+ 				}).Info("Retrying...")
+ 				time.Sleep(time.Duration(config.RetryInterval) * time.Second)
+ 			} else {
+-				logrus.Fatal("Out of retries, exiting...")
++				logrus.Error("Out of retries, exiting...")
++				break
+ 			}
+ 		} else {
+ 			client = c
+@@ -210,7 +211,7 @@ func client(config *clientConfig) {
+ 					}
+ 				})
+ 			if err != nil {
+-				logrus.WithField("error", err).Fatal("Failed to initialize SOCKS5 server")
++				logrus.WithField("error", err).Error("Failed to initialize SOCKS5 server")
+ 			}
+ 			logrus.WithField("addr", config.SOCKS5.Listen).Info("SOCKS5 server up and running")
+ 			errChan <- socks5server.ListenAndServe()
+@@ -235,7 +236,7 @@ func client(config *clientConfig) {
+ 				},
+ 				authFunc)
+ 			if err != nil {
+-				logrus.WithField("error", err).Fatal("Failed to initialize HTTP server")
++				logrus.WithField("error", err).Error("Failed to initialize HTTP server")
+ 			}
+ 			if config.HTTP.Cert != "" && config.HTTP.Key != "" {
+ 				logrus.WithField("addr", config.HTTP.Listen).Info("HTTPS server up and running")
+@@ -256,7 +257,7 @@ func client(config *clientConfig) {
+ 			tunServer, err := tun.NewServer(client, time.Duration(config.TUN.Timeout)*time.Second,
+ 				config.TUN.Name, config.TUN.Address, config.TUN.Gateway, config.TUN.Mask, config.TUN.DNS, config.TUN.Persist)
+ 			if err != nil {
+-				logrus.WithField("error", err).Fatal("Failed to initialize TUN server")
++				logrus.WithField("error", err).Error("Failed to initialize TUN server")
+ 			}
+ 			tunServer.RequestFunc = func(addr net.Addr, reqAddr string) {
+ 				logrus.WithFields(logrus.Fields{
+@@ -325,7 +326,7 @@ func client(config *clientConfig) {
+ 						}
+ 					})
+ 				if err != nil {
+-					logrus.WithField("error", err).Fatal("Failed to initialize TCP relay")
++					logrus.WithField("error", err).Error("Failed to initialize TCP relay")
+ 				}
+ 				logrus.WithField("addr", tcpr.Listen).Info("TCP relay up and running")
+ 				errChan <- rl.ListenAndServe()
+@@ -364,7 +365,7 @@ func client(config *clientConfig) {
+ 						}
+ 					})
+ 				if err != nil {
+-					logrus.WithField("error", err).Fatal("Failed to initialize UDP relay")
++					logrus.WithField("error", err).Error("Failed to initialize UDP relay")
+ 				}
+ 				logrus.WithField("addr", udpr.Listen).Info("UDP relay up and running")
+ 				errChan <- rl.ListenAndServe()
+@@ -397,7 +398,7 @@ func client(config *clientConfig) {
+ 					}
+ 				})
+ 			if err != nil {
+-				logrus.WithField("error", err).Fatal("Failed to initialize TCP TProxy")
++				logrus.WithField("error", err).Error("Failed to initialize TCP TProxy")
+ 			}
+ 			logrus.WithField("addr", config.TCPTProxy.Listen).Info("TCP TProxy up and running")
+ 			errChan <- rl.ListenAndServe()
+@@ -429,7 +430,7 @@ func client(config *clientConfig) {
+ 					}
+ 				})
+ 			if err != nil {
+-				logrus.WithField("error", err).Fatal("Failed to initialize UDP TProxy")
++				logrus.WithField("error", err).Error("Failed to initialize UDP TProxy")
+ 			}
+ 			logrus.WithField("addr", config.UDPTProxy.Listen).Info("UDP TProxy up and running")
+ 			errChan <- rl.ListenAndServe()
+@@ -461,7 +462,7 @@ func client(config *clientConfig) {
+ 					}
+ 				})
+ 			if err != nil {
+-				logrus.WithField("error", err).Fatal("Failed to initialize TCP Redirect")
++				logrus.WithField("error", err).Error("Failed to initialize TCP Redirect")
+ 			}
+ 			logrus.WithField("addr", config.TCPRedirect.Listen).Info("TCP Redirect up and running")
+ 			errChan <- rl.ListenAndServe()
+@@ -469,7 +470,7 @@ func client(config *clientConfig) {
+ 	}
+ 
+ 	err := <-errChan
+-	logrus.WithField("error", err).Fatal("Client shutdown")
++	logrus.WithField("error", err).Error("Client shutdown")
+ }
+ 
+ func parseClientConfig(cb []byte) (*clientConfig, error) {
 diff --git a/cmd/completion.go b/cmd/completion.go
 index ea6bbed..8d1ff78 100644
 --- a/cmd/completion.go
