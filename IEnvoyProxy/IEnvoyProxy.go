@@ -322,7 +322,7 @@ func StartHysteria(server, obfs, ca string) int {
 		return 0
 	}
 
-	fmt.Printf("config: %s", string(confJson))
+	// fmt.Printf("config: %s", string(confJson))
 
 	go hysteria.Start(&confJson)
 
