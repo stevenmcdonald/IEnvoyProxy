@@ -1,5 +1,5 @@
  cmd/acme.go        |  2 +-
- cmd/client.go      | 31 ++++++++++++++++---------------
+ cmd/client.go      | 48 ++++++++++++++++++++++++------------------------
  cmd/completion.go  |  2 +-
  cmd/config.go      |  2 +-
  cmd/config_test.go |  2 +-
@@ -9,7 +9,7 @@
  cmd/resolver.go    |  2 +-
  cmd/server.go      |  2 +-
  cmd/update.go      |  2 +-
- 11 files changed, 69 insertions(+), 27 deletions(-)
+ 11 files changed, 77 insertions(+), 36 deletions(-)
 
 diff --git a/cmd/acme.go b/cmd/acme.go
 index c4cf196..c56e852 100644
@@ -22,7 +22,7 @@ index c4cf196..c56e852 100644
  import (
  	"context"
 diff --git a/cmd/client.go b/cmd/client.go
-index 69b3ec6..8d17d7f 100644
+index 69b3ec6..ad64d42 100644
 --- a/cmd/client.go
 +++ b/cmd/client.go
 @@ -1,4 +1,4 @@
@@ -31,23 +31,44 @@ index 69b3ec6..8d17d7f 100644
  
  import (
  	"crypto/tls"
-@@ -55,13 +55,13 @@ func client(config *clientConfig) {
- 			logrus.WithFields(logrus.Fields{
- 				"error": err,
- 				"file":  config.CustomCA,
+@@ -9,7 +9,7 @@ import (
+ 	"github.com/tobyxdd/hysteria/pkg/redirect"
+ 	"github.com/yosuke-furukawa/json5/encoding/json5"
+ 	"io"
+-	"io/ioutil"
++	// "io/ioutil"
+ 	"net"
+ 	"net/http"
+ 	"os"
+@@ -50,18 +50,17 @@ func client(config *clientConfig) {
+ 	}
+ 	// Load CA
+ 	if len(config.CustomCA) > 0 {
+-		bs, err := ioutil.ReadFile(config.CustomCA)
+-		if err != nil {
+-			logrus.WithFields(logrus.Fields{
+-				"error": err,
+-				"file":  config.CustomCA,
 -			}).Fatal("Failed to load CA")
-+			}).Error("Failed to load CA")
- 		}
+-		}
++		// bs, err := ioutil.ReadFile(config.CustomCA)
++		// if err != nil {
++		// 	logrus.WithFields(logrus.Fields{
++		// 		"error": err,
++		// 		"file":  config.CustomCA,
++		// 	}).Error("Failed to load CA")
++		// }
++		bs := []byte(config.CustomCA)
  		cp := x509.NewCertPool()
  		if !cp.AppendCertsFromPEM(bs) {
- 			logrus.WithFields(logrus.Fields{
- 				"file": config.CustomCA,
+-			logrus.WithFields(logrus.Fields{
+-				"file": config.CustomCA,
 -			}).Fatal("Failed to parse CA")
-+			}).Error("Failed to parse CA")
++			logrus.Error("Failed to parse CA")
  		}
  		tlsConfig.RootCAs = cp
  	}
-@@ -104,7 +104,7 @@ func client(config *clientConfig) {
+@@ -104,7 +103,7 @@ func client(config *clientConfig) {
  		if err != nil {
  			logrus.WithFields(logrus.Fields{
  				"error": err,
@@ -56,7 +77,7 @@ index 69b3ec6..8d17d7f 100644
  		}
  		transport.DefaultClientTransport.PrefEnabled = true
  		transport.DefaultClientTransport.PrefIPv6 = pref
-@@ -126,7 +126,7 @@ func client(config *clientConfig) {
+@@ -126,7 +125,7 @@ func client(config *clientConfig) {
  			logrus.WithFields(logrus.Fields{
  				"error": err,
  				"file":  config.ACL,
@@ -65,7 +86,7 @@ index 69b3ec6..8d17d7f 100644
  		}
  	}
  	// Client
-@@ -149,7 +149,8 @@ func client(config *clientConfig) {
+@@ -149,7 +148,8 @@ func client(config *clientConfig) {
  				}).Info("Retrying...")
  				time.Sleep(time.Duration(config.RetryInterval) * time.Second)
  			} else {
@@ -75,7 +96,7 @@ index 69b3ec6..8d17d7f 100644
  			}
  		} else {
  			client = c
-@@ -210,7 +211,7 @@ func client(config *clientConfig) {
+@@ -210,7 +210,7 @@ func client(config *clientConfig) {
  					}
  				})
  			if err != nil {
@@ -84,7 +105,7 @@ index 69b3ec6..8d17d7f 100644
  			}
  			logrus.WithField("addr", config.SOCKS5.Listen).Info("SOCKS5 server up and running")
  			errChan <- socks5server.ListenAndServe()
-@@ -235,7 +236,7 @@ func client(config *clientConfig) {
+@@ -235,7 +235,7 @@ func client(config *clientConfig) {
  				},
  				authFunc)
  			if err != nil {
@@ -93,7 +114,7 @@ index 69b3ec6..8d17d7f 100644
  			}
  			if config.HTTP.Cert != "" && config.HTTP.Key != "" {
  				logrus.WithField("addr", config.HTTP.Listen).Info("HTTPS server up and running")
-@@ -256,7 +257,7 @@ func client(config *clientConfig) {
+@@ -256,7 +256,7 @@ func client(config *clientConfig) {
  			tunServer, err := tun.NewServer(client, time.Duration(config.TUN.Timeout)*time.Second,
  				config.TUN.Name, config.TUN.Address, config.TUN.Gateway, config.TUN.Mask, config.TUN.DNS, config.TUN.Persist)
  			if err != nil {
@@ -102,7 +123,7 @@ index 69b3ec6..8d17d7f 100644
  			}
  			tunServer.RequestFunc = func(addr net.Addr, reqAddr string) {
  				logrus.WithFields(logrus.Fields{
-@@ -325,7 +326,7 @@ func client(config *clientConfig) {
+@@ -325,7 +325,7 @@ func client(config *clientConfig) {
  						}
  					})
  				if err != nil {
@@ -111,7 +132,7 @@ index 69b3ec6..8d17d7f 100644
  				}
  				logrus.WithField("addr", tcpr.Listen).Info("TCP relay up and running")
  				errChan <- rl.ListenAndServe()
-@@ -364,7 +365,7 @@ func client(config *clientConfig) {
+@@ -364,7 +364,7 @@ func client(config *clientConfig) {
  						}
  					})
  				if err != nil {
@@ -120,7 +141,7 @@ index 69b3ec6..8d17d7f 100644
  				}
  				logrus.WithField("addr", udpr.Listen).Info("UDP relay up and running")
  				errChan <- rl.ListenAndServe()
-@@ -397,7 +398,7 @@ func client(config *clientConfig) {
+@@ -397,7 +397,7 @@ func client(config *clientConfig) {
  					}
  				})
  			if err != nil {
@@ -129,7 +150,7 @@ index 69b3ec6..8d17d7f 100644
  			}
  			logrus.WithField("addr", config.TCPTProxy.Listen).Info("TCP TProxy up and running")
  			errChan <- rl.ListenAndServe()
-@@ -429,7 +430,7 @@ func client(config *clientConfig) {
+@@ -429,7 +429,7 @@ func client(config *clientConfig) {
  					}
  				})
  			if err != nil {
@@ -138,7 +159,7 @@ index 69b3ec6..8d17d7f 100644
  			}
  			logrus.WithField("addr", config.UDPTProxy.Listen).Info("UDP TProxy up and running")
  			errChan <- rl.ListenAndServe()
-@@ -461,7 +462,7 @@ func client(config *clientConfig) {
+@@ -461,7 +461,7 @@ func client(config *clientConfig) {
  					}
  				})
  			if err != nil {
@@ -147,7 +168,7 @@ index 69b3ec6..8d17d7f 100644
  			}
  			logrus.WithField("addr", config.TCPRedirect.Listen).Info("TCP Redirect up and running")
  			errChan <- rl.ListenAndServe()
-@@ -469,7 +470,7 @@ func client(config *clientConfig) {
+@@ -469,7 +469,7 @@ func client(config *clientConfig) {
  	}
  
  	err := <-errChan
