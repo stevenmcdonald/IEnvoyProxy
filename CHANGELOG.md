@@ -1,5 +1,8 @@
 # IEnvoyProxy Changlog
 
+## 1.1.1
+ - Bug fix: hysteria code would exit embedding app on error
+
 ## 1.1.0
  - V2ray support
  - remove binaries from the repo
