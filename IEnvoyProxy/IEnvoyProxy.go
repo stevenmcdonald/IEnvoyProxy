@@ -86,8 +86,8 @@ func HysteriaPort() int {
 
 
 var v2raySrtpPort = 47600
-var v2rayWechatPort = 47601
-var v2rayWsPort = 47602
+var v2rayWechatPort = 47700
+var v2rayWsPort = 47800
 
 func V2raySrtpPort() int {
 	return v2raySrtpPort
@@ -104,7 +104,9 @@ func V2rayWsPort() int {
 var obfs4ProxyRunning = false
 var dnsttRunning = false
 var hysteriaRunning = false
-var v2rayRunning = false
+var v2rayWsRunning = false
+var v2raySrtpRunning = false
+var v2rayWechatRunning = false
 
 // StateLocation - Override TOR_PT_STATE_LOCATION, which defaults to "$TMPDIR/pt_state".
 var StateLocation string
@@ -279,7 +281,7 @@ type HysteriaConfig struct {
 	Up_mbps		int				`json:"up_mbps"`
 	Down_mbps	int				`json:"down_mbps"`
 	Ca			string			`json:"ca"`
-	Alpn		string			`json:alpn`
+	Alpn		string			`json:"alpn"`
 }
 
 // StartHysteria -- Start the Hysteria client
@@ -339,53 +341,88 @@ func StopHysteria() {
 	hysteriaRunning = false
 }
 
-// StartV2ray -- Start v2ray client
+// StartV2RayWs - Start V2Ray client for websocket transport
 //
-// @param serverAddress - IP or hostname of the server for SRTP and wechat-video
+// @param serverAddress - Hostname of WS web server proxy
 //
-// @param serverWsAddress - Hostname of WS web server proxy
+// @oaram serverPort - Port of the WS listener (probably 443)
 //
-// @param serverWsPort - port of the WS server (TLS is assumed, so probably 443)
+// @param wsPath - path the websocket
 //
-// @param serverWsPath - websocket path (should be the same in the v2ray config and http proxy host)
-//
-// @param serverSrtpPort - port for (fake) SRTP connections
-//
-// @param serverWechatPort - port for (fake) Wechat video connections
-//
-// @param id - UUID for authentication with the server
-//
-// returns the client Websocket port, call the helper functions for the other ports
-//
-func StartV2Ray(serverAddress, serverWsAddress, serverWsPort, serverWsPath, serverSrtpPort, serverWechatPort, id string) int {
-	if v2rayRunning {
+// @param id - v2ray UUID for auth
+func StartV2RayWs(serverAddress, serverPort, wsPath, id string) int {
+	if v2rayWsRunning {
 		return v2rayWsPort
 	}
 
 	v2rayWsPort = findPort(v2rayWsPort)
-	v2raySrtpPort = findPort(v2rayWsPort + 1)
-	v2rayWechatPort = findPort(v2raySrtpPort + 1)
+	clientPort := strconv.Itoa(v2rayWsPort)
 
-	// convert to strings
-	wsport := strconv.Itoa(v2rayWsPort)
-	srtpport := strconv.Itoa(v2raySrtpPort)
-	wechatport := strconv.Itoa(v2rayWechatPort)
+	v2rayWsRunning = true
 
-	v2rayRunning = true
-
-	go v2ray.Start(&wsport, &srtpport, &wechatport, &serverAddress, &serverWsPort, &serverSrtpPort, &serverWechatPort, &serverWsPath, &id)
+	go v2ray.StartWs(&clientPort, &serverAddress, &serverPort, &wsPath, &id)
 
 	return v2rayWsPort
 }
 
-func StopV2ray() {
-	if !v2rayRunning {
+func StopV2RayWs() {
+	if !v2rayWsRunning {
 		return
 	}
 
-	go v2ray.Stop()
+	go v2ray.StopWs()
 
-	v2rayRunning = false
+	v2rayWsRunning = false
+}
+
+func StartV2raySrtp(serverAddress, serverPort, id string) int {
+	if v2raySrtpRunning {
+		return v2raySrtpPort
+	}
+
+	v2raySrtpPort = findPort(v2raySrtpPort)
+	clientPort := strconv.Itoa(v2raySrtpPort)
+
+	v2raySrtpRunning = true
+
+	go v2ray.StartSrtp(&clientPort, &serverAddress, &serverPort, &id)
+
+	return v2raySrtpPort
+}
+
+func StopV2RaySrtp() {
+	if !v2raySrtpRunning {
+		return
+	}
+
+	go v2ray.StopSrtp()
+
+	v2raySrtpRunning = false
+}
+
+func StartV2RayWechat(serverAddress, serverPort, id string) int {
+	if v2rayWechatRunning {
+		return v2rayWechatPort
+	}
+
+	v2rayWechatPort = findPort(v2rayWechatPort)
+	clientPort := strconv.Itoa(v2rayWechatPort)
+
+	v2rayWechatRunning = true
+
+	go v2ray.StartWechat(&clientPort, &serverAddress, &serverPort, &id)
+
+	return v2rayWechatPort
+}
+
+func StopV2RayWechat() {
+	if !v2rayWechatRunning {
+		return
+	}
+
+	go v2ray.StopWechat()
+
+	v2rayWechatRunning = false
 }
 
 func findPort(port int) int {
