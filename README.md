@@ -212,7 +212,7 @@ export GO386=sse2
 
 - Benjamin Erhart, berhart@netzarchitekten.com
 - Nathan Freitas
-- Bim
+- Annette (formerly Bim)
 
 for the Guardian Project https://guardianproject.info
 
