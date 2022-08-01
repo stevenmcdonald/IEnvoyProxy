@@ -1,5 +1,8 @@
 # IEnvoyProxy Changlog
 
+## 1.2.0
+ - rework V2Ray support so Websocket, RSTP, and Wechat can be started separately
+
 ## 1.1.1
  - Bug fix: hysteria code would exit embedding app on error
 
