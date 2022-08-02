@@ -1,12 +1,12 @@
- envoy/v2ray.go | 334 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 334 insertions(+)
+ envoy/v2ray.go | 294 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 294 insertions(+)
 
 diff --git a/envoy/v2ray.go b/envoy/v2ray.go
 new file mode 100644
-index 00000000..a96b3a5d
+index 00000000..3f458826
 --- /dev/null
 +++ b/envoy/v2ray.go
-@@ -0,0 +1,334 @@
+@@ -0,0 +1,294 @@
 +package v2ray
 +
 +// copied and modified from main/commands/run.go
@@ -22,6 +22,10 @@ index 00000000..a96b3a5d
 +// (that will be) documented here:
 +// https://gitlab.com/stevenmcdonald/envoy-proxy-examples/v2ray/
 +
++// We provide functions for starting and stopping several client services
++// indpenedently. Unfortunately you can't start them all and tell v2ray to
++// use the one that works... but that's what Envoy is good at.
++
 +import (
 +	"fmt"
 +	"os"
@@ -33,19 +37,9 @@ index 00000000..a96b3a5d
 +	_ "github.com/v2fly/v2ray-core/v5/main/distro/all"
 +)
 +
-+type V2RayEnvoyConfig struct {
-+	ServerAddress		string
-+	ServerSRTPPort		string
-+	ServerWechatPort	string
-+	ServerWSPort		string
-+	ServerWSPath		string
-+	ClientSRTPPort		string
-+	ClientWechatPort	string
-+	ClientWSPort		string
-+	Id					string
-+}
-+
-+var osSignals = make(chan os.Signal, 1)
++var osWsSignals = make(chan os.Signal, 1)
++var osWechatSignals = make(chan os.Signal, 1)
++var osSrtpSignals = make(chan os.Signal, 1)
 +
 +// getInbound
 +//
@@ -53,265 +47,137 @@ index 00000000..a96b3a5d
 +//
 +func getInbound(clientPort *string) string {
 +	inbound := fmt.Sprintf(`
-+    {
-+      "port": %s,
-+      "protocol": "socks",
-+      "sniffing": {
-+        "enabled": true,
-+        "destOverride": ["http", "tls"]
-+      },
-+      "settings": {
-+        "auth": "noauth"
-+      }
++  {
++    "port": %s,
++    "protocol": "socks",
++    "sniffing": {
++      "enabled": true,
++      "destOverride": ["http", "tls"]
++    },
++    "settings": {
++      "auth": "noauth"
 +    }
-+		`, *clientPort)
++  }`, *clientPort)
 +
 +	return inbound
 +}
 +
-+// getSrtpOutbound
-+//
-+// @param address - Server name or IP address
-+//
-+// @param port - Server port
-+//
-+// @param id - UUID to authorize with server
-+//
-+func getSrtpOutbound(config *V2RayEnvoyConfig) string {
-+	outbound := fmt.Sprintf(`
-+	{
-+      "protocol": "vmess",
-+      "settings": {
-+        "vnext": [
-+          {
-+            "address": "%s",
-+            "port": %s,
-+            "users": [
-+              {
-+                "id": "%s",
-+                "alterId": 0
-+              }
-+            ]
-+          }
-+        ]
-+      },
-+      "streamSettings": {
-+        "network": "quic",
-+        "quicSettings": {
-+          "security": "aes-128-gcm",
-+          "header": {
-+            "type": "srtp"
-+          },
-+          "key": "0"
-+        }
-+      }
-+    }
-+		`, config.ServerAddress, config.ServerSRTPPort, config.Id)
++func getWsConfig(clientPort, serverAddress, serverWsPort, wsPath, id *string) string {
 +
-+	return outbound
-+}
-+
-+// getWechatOutbound
-+//
-+// @param address - Server name or IP address
-+//
-+// @param port - Server port
-+//
-+// @param id - UUID to authorize with server
-+//
-+func getWechatOutbound(config *V2RayEnvoyConfig) string {
-+	outbound := fmt.Sprintf(`
-+	{
-+      "protocol": "vmess",
-+      "settings": {
-+        "vnext": [
-+          {
-+            "address": "%s",
-+            "port": %s,
-+            "users": [
-+              {
-+                "id": "%s",
-+                "alterId": 0
-+              }
-+            ]
-+          }
-+        ]
-+      },
-+      "streamSettings": {
-+        "network": "quic",
-+        "quicSettings": {
-+          "security": "aes-128-gcm",
-+          "header": {
-+            "type": "wechat-video"
-+          },
-+          "key": "0"
-+        }
-+      }
-+    }
-+		`, config.ServerAddress, config.ServerSRTPPort, config.Id)
-+
-+	return outbound
-+}
-+
-+func getTLSWebsocketOutbound(config *V2RayEnvoyConfig) string {
-+	outbound := fmt.Sprintf(`
-+		{
-+      "protocol": "vmess",
-+      "settings": {
-+        "vnext": [
-+          {
-+            "address": "%s",
-+            "port": %s,
-+            "users": [
-+              {
-+                "id": "%s",
-+                "alterId": 0
-+              }
-+            ]
-+          }
-+        ]
-+      },
-+      "streamSettings": {
-+        "network": "ws",
-+        "security": "tls",
-+        "wsSettings": {
-+          "path": "%s"
-+        }
-+      }
-+    }
-+		`, config.ServerAddress, config.ServerWSPort, config.Id, config.ServerWSPath)
-+
-+	return outbound
-+}
-+
-+func getOutbounds(config *V2RayEnvoyConfig) string {
-+	srtpOutbound := getSrtpOutbound(config)
-+	wechatOutbound := getWechatOutbound(config)
-+	wsOutbound := getTLSWebsocketOutbound(config)
-+
-+	outbounds := fmt.Sprintf(`
-+	"outbounds": [
-+		%s,
-+		%s,
-+		%s
-+	]
-+	`, srtpOutbound, wechatOutbound, wsOutbound)
-+
-+	return outbounds
-+}
-+
-+func getInbounds(config *V2RayEnvoyConfig) string {
-+	inbounds := fmt.Sprintf(`
-+		"inbounds": [
-+    {
-+      "tag": "ws_in",
-+      "port": %s,
-+      "protocol": "socks",
-+      "settings": {
-+        "auth": "noauth"
-+      }
-+    },
-+    {
-+      "tag": "srtp_in",
-+      "port": %s,
-+      "protocol": "socks",
-+      "settings": {
-+        "auth": "noauth"
-+      }
-+    },
-+    {
-+      "tag": "wechat_in",
-+      "port": %s,
-+      "protocol": "socks",
-+      "settings": {
-+        "auth": "noauth"
-+      }
-+    }
-+  ]
-+  `, config.ClientWSPort, config.ClientSRTPPort, config.ClientWechatPort)
-+
-+  return inbounds
-+}
-+
-+//
-+// Routing is set such that e.g. the "ClientSRTPPort" is routed to the 
-+// "ServerSRTPPort"... v2ray's internal routing doesn't handle e.g. some
-+// outbounds not working, so we make them effectivly indpenedent
-+// and let Envoy sort out which ones work.
-+func getConfig(config *V2RayEnvoyConfig) string {
-+
-+	inbounds := getInbounds(config)
-+	outbounds := getOutbounds(config)
++	inbound := getInbound(clientPort)
 +
 +	jsonConfig := fmt.Sprintf(`
-+{
-+  "log": {
-+    "loglevel": "debug" // set to debug for more console output
-+  },
-+  %s,
-+  %s,
-+  "routing": {
-+    "domainStrategy": "AsIs",
-+    "rules": [
++  {
++    "log": {
++      "loglevel": "debug"
++    },
++    "inbounds": [
++      %s
++    ],
++    "outbounds": [
 +      {
-+        "inboundTag": ["ws_in"],
-+        "outboundTag": "ws_out",
-+        "type": "field"
-+      },
-+      {
-+        "inboundTag": ["srtp_in"],
-+        "outboundTag": "srtp_out",
-+        "type": "field"
-+      },
-+      {
-+        "inboundTag": ["wechat_in"],
-+        "outboundTag": "wechat_out",
-+        "type": "field"
++        "protocol": "vmess",
++        "settings": {
++          "vnext": [
++            {
++              "address": "%s",
++              "port": %s,
++              "users": [
++                {
++                  "id": "%s",
++                  "alterId": 0
++                }
++              ]
++            }
++          ]
++        },
++        "streamSettings": {
++          "network": "ws",
++          "security": "tls",
++          "wsSettings": {
++            "path": "%s"
++          }
++        }
 +      }
 +    ]
-+  }
-+}
-+`, inbounds, outbounds)
++  }`, inbound, *serverAddress, *serverWsPort, *id, *wsPath)
 +
 +	return jsonConfig
 +}
 +
-+// Start - start v2ray
++// getQUICConfig
 +//
-+// @param wsPort - client SOCKS port routed to the WS server
++// @param clientPort - port to listen on for SOCKS5 connections
 +//
-+// @param srtpPort - client SOCKS port routed to the SRTP server
++// @param serverAddress - server address to connect to
 +//
-+// @param wechatPort - client SOCKS port routed to the wechat-video server
++// @param serverPort - server port to connect to
++//
++// @oaram type - type of QUIC obfuscation, should be "srtp" or "wechat-video"
++func getQuicConfig(clientPort, serverAddress, serverPort, quicType, id *string) string {
++
++	inbound := getInbound(clientPort)
++
++	jsonConfig := fmt.Sprintf(`
++  {
++    "log": {
++      "loglevel": "debug"
++    },
++    "inbounds": [
++      %s
++    ],
++    "outbounds": [
++      {
++        "protocol": "vmess",
++        "settings": {
++          "vnext": [
++            {
++              "address": "%s",
++              "port": %s,
++              "users": [
++                {
++                  "id": "%s",
++                  "alterId": 0
++                }
++              ]
++            }
++          ]
++        },
++        "streamSettings": {
++          "network": "quic",
++          "quicSettings": {
++            "security": "aes-128-gcm",
++            "header": {
++              "type": "%s"
++            },
++            "key": "0"
++          }
++        }
++      }
++    ]
++  }`, inbound, *serverAddress, *serverPort, *id, *quicType)
++
++	return jsonConfig
++}
++
++// StartWs - start v2ray, websocket transport
++//
++// @param clientPort - client SOCKS port routed to the WS server
 +//
 +// @param serverAddress - IP or hostname of the server
 +//
-+// @param serverWsPort - port of the websocket server (probably 443)
++// @param serverPort - port of the websocket server (probably 443)
 +//
-+// @param serverSrtpPort - port of the SRTP server
-+//
-+// @param serverWechatPort - port of the wechat-video server
++// @param wsPath - path to the websocket on the server
 +//
 +// @param id - UUID used to authenticate with the server
 +//
-+func Start(wsPort, srtpPort, wechatPort, serverAddress, serverWsPort, serverSrtpPort, serverWechatPort, wsPath, id *string) error {
-+	config := V2RayEnvoyConfig{
-+		*serverAddress,
-+		*serverSrtpPort,
-+		*serverWechatPort,
-+		*serverWsPort,
-+		*wsPath,
-+		*srtpPort,
-+		*wechatPort,
-+		*wsPort,
-+		*id,
-+    }
-+
-+	configJSON := getConfig(&config)
++func StartWs(clientPort, serverAddress, serverPort, wsPath, id *string) error {
++	configJson := getWsConfig(clientPort, serverAddress, serverPort, wsPath, id)
 +
 +	// fmt.Println(configJSON)
 +
-+	reader := strings.NewReader(configJSON)
++	reader := strings.NewReader(configJson)
 +	clientConfig, err := core.LoadConfig(core.FormatJSON, reader)
 +	if err != nil {
 +		fmt.Println("error reading config: %s", err)
@@ -331,13 +197,107 @@ index 00000000..a96b3a5d
 +	defer server.Close()
 +
 +	{
-+		signal.Notify(osSignals, os.Interrupt, syscall.SIGTERM)
-+		<-osSignals
++		signal.Notify(osWsSignals, syscall.SIGTERM)
++		<-osWsSignals
 +	}
 +
 +	return nil
 +}
 +
-+func Stop() {
-+	osSignals <- syscall.SIGTERM
++func StopWs() {
++	osWsSignals <- syscall.SIGTERM
++}
++
++// StartSrtp - start v2ray, QUIC/SRTP transport
++//
++// @param clientPort - client SOCKS port routed to the WS server
++//
++// @param serverAddress - IP or hostname of the server
++//
++// @param serverPort - port of the websocket server (probably 443)
++//
++// @param id - UUID used to authenticate with the server
++//
++func StartSrtp(clientPort, serverAddress, serverPort, id *string) error {
++	quicType := "srtp"
++	configJson := getQuicConfig(clientPort, serverAddress, serverPort, &quicType, id)
++
++	// fmt.Println(configJson)
++
++	reader := strings.NewReader(configJson)
++	clientConfig, err := core.LoadConfig(core.FormatJSON, reader)
++	if err != nil {
++		fmt.Println("error reading config: %s", err)
++		return err
++	}
++
++	server, err := core.New(clientConfig)
++	if err != nil {
++		fmt.Println("error creating server: %s", err)
++		return err
++	}
++
++	if err := server.Start(); err != nil {
++		fmt.Println("failed to start %s", err)
++	}
++
++	defer server.Close()
++
++	{
++		signal.Notify(osWsSignals, syscall.SIGTERM)
++		<-osSrtpSignals
++	}
++
++	return nil
++}
++
++func StopSrtp() {
++	osSrtpSignals <- syscall.SIGTERM
++}
++
++// StartWechat - start v2ray, QUIC/Wechat-video transport
++//
++// @param clientPort - client SOCKS port routed to the WS server
++//
++// @param serverAddress - IP or hostname of the server
++//
++// @param serverPort - port of the websocket server (probably 443)
++//
++// @param id - UUID used to authenticate with the server
++//
++func StartWechat(clientPort, serverAddress, serverPort, id *string) error {
++	quicType := "wechat-video"
++	configJson := getQuicConfig(clientPort, serverAddress, serverPort, &quicType, id)
++
++	// fmt.Println(configJSON)
++
++	reader := strings.NewReader(configJson)
++	clientConfig, err := core.LoadConfig(core.FormatJSON, reader)
++	if err != nil {
++		fmt.Println("error reading config: %s", err)
++		return err
++	}
++
++	server, err := core.New(clientConfig)
++	if err != nil {
++		fmt.Println("error creating server: %s", err)
++		return err
++	}
++
++	if err := server.Start(); err != nil {
++		fmt.Println("failed to start %s", err)
++	}
++
++	defer server.Close()
++
++	{
++		signal.Notify(osWsSignals, syscall.SIGTERM)
++		<-osWechatSignals
++	}
++
++	return nil
++}
++
++func StopWechat() {
++	osWechatSignals <- syscall.SIGTERM
 +}

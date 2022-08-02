@@ -178,7 +178,7 @@ for GreatFire https://en.greatfire.org/
 
 - Benjamin Erhart, berhart@netzarchitekten.com
 - Nathan Freitas
-- Bim
+- Annette (formerly Bim)
 
 for the Guardian Project https://guardianproject.info
 
