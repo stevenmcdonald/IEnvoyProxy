@@ -272,7 +272,7 @@ index bd53a30..57b125c 100644
 +	// log config
 +	logrus.SetOutput(os.Stdout)
 +	// XXX: 
-+	logrus.SetLevel(logrus.DebugLevel)
++	logrus.SetLevel(logrus.ErrorLevel)
 +
 +	logrus.SetFormatter(&nested.Formatter{
 +		FieldsOrder: []string{
