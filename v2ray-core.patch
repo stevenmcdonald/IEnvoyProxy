@@ -3,7 +3,7 @@
 
 diff --git a/envoy/v2ray.go b/envoy/v2ray.go
 new file mode 100644
-index 00000000..3f458826
+index 00000000..6a153e8c
 --- /dev/null
 +++ b/envoy/v2ray.go
 @@ -0,0 +1,294 @@
@@ -69,7 +69,7 @@ index 00000000..3f458826
 +	jsonConfig := fmt.Sprintf(`
 +  {
 +    "log": {
-+      "loglevel": "debug"
++      "loglevel": "error"
 +    },
 +    "inbounds": [
 +      %s
