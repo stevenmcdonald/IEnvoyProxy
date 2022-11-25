@@ -1,18 +1,18 @@
  cmd/acme.go        |  2 +-
- cmd/client.go      | 48 ++++++++++++++++++++++++------------------------
+ cmd/client.go      | 46 +++++++++++++++++++++++-----------------------
  cmd/completion.go  |  2 +-
  cmd/config.go      |  2 +-
  cmd/config_test.go |  2 +-
  cmd/kploader.go    |  2 +-
- cmd/main.go        | 47 ++++++++++++++++++++++++++++++++++++++++++++---
+ cmd/main.go        | 43 +++++++++++++++++++++++++++++++++++++++++--
  cmd/mmdb.go        |  2 +-
  cmd/resolver.go    |  2 +-
  cmd/server.go      |  2 +-
  cmd/update.go      |  2 +-
- 11 files changed, 77 insertions(+), 36 deletions(-)
+ 11 files changed, 73 insertions(+), 34 deletions(-)
 
 diff --git a/cmd/acme.go b/cmd/acme.go
-index c4cf196..c56e852 100644
+index 991de94..920f7a0 100644
 --- a/cmd/acme.go
 +++ b/cmd/acme.go
 @@ -1,4 +1,4 @@
@@ -22,25 +22,24 @@ index c4cf196..c56e852 100644
  import (
  	"context"
 diff --git a/cmd/client.go b/cmd/client.go
-index 69b3ec6..ad64d42 100644
+index d35f3b3..d9c09ee 100644
 --- a/cmd/client.go
 +++ b/cmd/client.go
-@@ -1,4 +1,4 @@
+@@ -1,11 +1,11 @@
 -package main
 +package hysteria
  
  import (
  	"crypto/tls"
-@@ -9,7 +9,7 @@ import (
- 	"github.com/tobyxdd/hysteria/pkg/redirect"
- 	"github.com/yosuke-furukawa/json5/encoding/json5"
+ 	"crypto/x509"
+ 	"errors"
  	"io"
 -	"io/ioutil"
 +	// "io/ioutil"
  	"net"
  	"net/http"
  	"os"
-@@ -50,18 +50,17 @@ func client(config *clientConfig) {
+@@ -58,18 +58,17 @@ func client(config *clientConfig) {
  	}
  	// Load CA
  	if len(config.CustomCA) > 0 {
@@ -68,16 +67,16 @@ index 69b3ec6..ad64d42 100644
  		}
  		tlsConfig.RootCAs = cp
  	}
-@@ -104,7 +103,7 @@ func client(config *clientConfig) {
+@@ -109,7 +108,7 @@ func client(config *clientConfig) {
  		if err != nil {
  			logrus.WithFields(logrus.Fields{
  				"error": err,
 -			}).Fatal("Failed to parse the resolve preference")
 +			}).Error("Failed to parse the resolve preference")
  		}
- 		transport.DefaultClientTransport.PrefEnabled = true
- 		transport.DefaultClientTransport.PrefIPv6 = pref
-@@ -126,7 +125,7 @@ func client(config *clientConfig) {
+ 		transport.DefaultClientTransport.ResolvePreference = pref
+ 	}
+@@ -125,7 +124,7 @@ func client(config *clientConfig) {
  			logrus.WithFields(logrus.Fields{
  				"error": err,
  				"file":  config.ACL,
@@ -86,7 +85,7 @@ index 69b3ec6..ad64d42 100644
  		}
  	}
  	// Client
-@@ -149,7 +148,8 @@ func client(config *clientConfig) {
+@@ -157,7 +156,8 @@ func client(config *clientConfig) {
  				}).Info("Retrying...")
  				time.Sleep(time.Duration(config.RetryInterval) * time.Second)
  			} else {
@@ -96,7 +95,7 @@ index 69b3ec6..ad64d42 100644
  			}
  		} else {
  			client = c
-@@ -210,7 +210,7 @@ func client(config *clientConfig) {
+@@ -218,7 +218,7 @@ func client(config *clientConfig) {
  					}
  				})
  			if err != nil {
@@ -105,25 +104,16 @@ index 69b3ec6..ad64d42 100644
  			}
  			logrus.WithField("addr", config.SOCKS5.Listen).Info("SOCKS5 server up and running")
  			errChan <- socks5server.ListenAndServe()
-@@ -235,7 +235,7 @@ func client(config *clientConfig) {
- 				},
- 				authFunc)
+@@ -248,7 +248,7 @@ func client(config *clientConfig) {
+ 					}).Info("HTTP error")
+ 				})
  			if err != nil {
 -				logrus.WithField("error", err).Fatal("Failed to initialize HTTP server")
 +				logrus.WithField("error", err).Error("Failed to initialize HTTP server")
  			}
  			if config.HTTP.Cert != "" && config.HTTP.Key != "" {
  				logrus.WithField("addr", config.HTTP.Listen).Info("HTTPS server up and running")
-@@ -256,7 +256,7 @@ func client(config *clientConfig) {
- 			tunServer, err := tun.NewServer(client, time.Duration(config.TUN.Timeout)*time.Second,
- 				config.TUN.Name, config.TUN.Address, config.TUN.Gateway, config.TUN.Mask, config.TUN.DNS, config.TUN.Persist)
- 			if err != nil {
--				logrus.WithField("error", err).Fatal("Failed to initialize TUN server")
-+				logrus.WithField("error", err).Error("Failed to initialize TUN server")
- 			}
- 			tunServer.RequestFunc = func(addr net.Addr, reqAddr string) {
- 				logrus.WithFields(logrus.Fields{
-@@ -325,7 +325,7 @@ func client(config *clientConfig) {
+@@ -295,7 +295,7 @@ func client(config *clientConfig) {
  						}
  					})
  				if err != nil {
@@ -132,7 +122,7 @@ index 69b3ec6..ad64d42 100644
  				}
  				logrus.WithField("addr", tcpr.Listen).Info("TCP relay up and running")
  				errChan <- rl.ListenAndServe()
-@@ -364,7 +364,7 @@ func client(config *clientConfig) {
+@@ -334,7 +334,7 @@ func client(config *clientConfig) {
  						}
  					})
  				if err != nil {
@@ -141,7 +131,7 @@ index 69b3ec6..ad64d42 100644
  				}
  				logrus.WithField("addr", udpr.Listen).Info("UDP relay up and running")
  				errChan <- rl.ListenAndServe()
-@@ -397,7 +397,7 @@ func client(config *clientConfig) {
+@@ -367,7 +367,7 @@ func client(config *clientConfig) {
  					}
  				})
  			if err != nil {
@@ -150,7 +140,7 @@ index 69b3ec6..ad64d42 100644
  			}
  			logrus.WithField("addr", config.TCPTProxy.Listen).Info("TCP TProxy up and running")
  			errChan <- rl.ListenAndServe()
-@@ -429,7 +429,7 @@ func client(config *clientConfig) {
+@@ -399,7 +399,7 @@ func client(config *clientConfig) {
  					}
  				})
  			if err != nil {
@@ -159,7 +149,7 @@ index 69b3ec6..ad64d42 100644
  			}
  			logrus.WithField("addr", config.UDPTProxy.Listen).Info("UDP TProxy up and running")
  			errChan <- rl.ListenAndServe()
-@@ -461,7 +461,7 @@ func client(config *clientConfig) {
+@@ -431,7 +431,7 @@ func client(config *clientConfig) {
  					}
  				})
  			if err != nil {
@@ -168,7 +158,7 @@ index 69b3ec6..ad64d42 100644
  			}
  			logrus.WithField("addr", config.TCPRedirect.Listen).Info("TCP Redirect up and running")
  			errChan <- rl.ListenAndServe()
-@@ -469,7 +469,7 @@ func client(config *clientConfig) {
+@@ -439,7 +439,7 @@ func client(config *clientConfig) {
  	}
  
  	err := <-errChan
@@ -188,7 +178,7 @@ index ea6bbed..8d1ff78 100644
  import (
  	"fmt"
 diff --git a/cmd/config.go b/cmd/config.go
-index 8de68ea..b519173 100644
+index ad6f1b5..ce79462 100644
 --- a/cmd/config.go
 +++ b/cmd/config.go
 @@ -1,4 +1,4 @@
@@ -208,7 +198,7 @@ index 11006ba..6966ceb 100644
  import "testing"
  
 diff --git a/cmd/kploader.go b/cmd/kploader.go
-index b71b3d0..8d6fced 100644
+index 5d6f60e..11a687a 100644
 --- a/cmd/kploader.go
 +++ b/cmd/kploader.go
 @@ -1,4 +1,4 @@
@@ -218,26 +208,10 @@ index b71b3d0..8d6fced 100644
  import (
  	"crypto/tls"
 diff --git a/cmd/main.go b/cmd/main.go
-index bd53a30..57b125c 100644
+index ab0c0c6..65f0524 100644
 --- a/cmd/main.go
 +++ b/cmd/main.go
-@@ -1,12 +1,14 @@
--package main
-+package hysteria
- 
- import (
- 	"fmt"
- 	"io/ioutil"
- 	"math/rand"
- 	"os"
-+	"os/signal"
- 	"regexp"
- 	"strings"
-+	"syscall"
- 	"time"
- 
- 	nested "github.com/antonfisher/nested-logrus-formatter"
-@@ -32,6 +34,9 @@ var (
+@@ -33,6 +33,9 @@ var (
  	appDate    = "Unknown"
  )
  
@@ -247,7 +221,7 @@ index bd53a30..57b125c 100644
  var rootCmd = &cobra.Command{
  	Use:     "hysteria",
  	Long:    fmt.Sprintf("%s%s\n\nVersion:\t%s\nBuildDate:\t%s\nCommitHash:\t%s\nAuthors:\t%s", logo, desc, appVersion, appDate, appCommit, authors),
-@@ -80,6 +85,8 @@ var clientCmd = &cobra.Command{
+@@ -97,6 +100,8 @@ var clientCmd = &cobra.Command{
  	Short:   "Run as client mode",
  	Example: "./hysteria client --config /etc/hysteria/client.json",
  	Run: func(cmd *cobra.Command, args []string) {
@@ -256,7 +230,7 @@ index bd53a30..57b125c 100644
  		cbs, err := ioutil.ReadFile(viper.GetString("config"))
  		if err != nil {
  			logrus.WithFields(logrus.Fields{
-@@ -176,6 +183,40 @@ func init() {
+@@ -201,6 +206,40 @@ func init() {
  	viper.AutomaticEnv()
  }
  
@@ -300,7 +274,7 @@ index bd53a30..57b125c 100644
 +	sigChan <- syscall.SIGTERM
  }
 diff --git a/cmd/mmdb.go b/cmd/mmdb.go
-index 1370959..91f30ab 100644
+index f35185d..d8cd643 100644
 --- a/cmd/mmdb.go
 +++ b/cmd/mmdb.go
 @@ -1,4 +1,4 @@
@@ -308,9 +282,9 @@ index 1370959..91f30ab 100644
 +package hysteria
  
  import (
- 	"github.com/oschwald/geoip2-golang"
+ 	"io"
 diff --git a/cmd/resolver.go b/cmd/resolver.go
-index f60442d..4a6921c 100644
+index 89ad58f..ffc7946 100644
 --- a/cmd/resolver.go
 +++ b/cmd/resolver.go
 @@ -1,4 +1,4 @@
@@ -318,9 +292,9 @@ index f60442d..4a6921c 100644
 +package hysteria
  
  import (
- 	"context"
+ 	"crypto/tls"
 diff --git a/cmd/server.go b/cmd/server.go
-index 5334ac2..d52bb3a 100644
+index b9976aa..89fa84c 100644
 --- a/cmd/server.go
 +++ b/cmd/server.go
 @@ -1,4 +1,4 @@
@@ -330,7 +304,7 @@ index 5334ac2..d52bb3a 100644
  import (
  	"crypto/tls"
 diff --git a/cmd/update.go b/cmd/update.go
-index b972f3b..922042c 100644
+index 3284e80..f60e0de 100644
 --- a/cmd/update.go
 +++ b/cmd/update.go
 @@ -1,4 +1,4 @@

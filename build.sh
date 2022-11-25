@@ -47,7 +47,7 @@ else
     cd ..
     git clone https://github.com/HyNetwork/hysteria.git
     cd hysteria || exit 1
-    git checkout --force --quiet da16c88
+    git checkout --force --quiet 385c2d6
     git clone https://github.com/v2fly/v2ray-core.git
     cd v2ray-core || exit 1
     git checkout --force --quiet b4069f74
