@@ -22,7 +22,7 @@ index c4cf196..c56e852 100644
  import (
  	"context"
 diff --git a/cmd/client.go b/cmd/client.go
-index 69b3ec6..ad64d42 100644
+index 69b3ec6..b58e4f6 100644
 --- a/cmd/client.go
 +++ b/cmd/client.go
 @@ -1,4 +1,4 @@
@@ -92,7 +92,7 @@ index 69b3ec6..ad64d42 100644
  			} else {
 -				logrus.Fatal("Out of retries, exiting...")
 +				logrus.Error("Out of retries, exiting...")
-+				break
++				return
  			}
  		} else {
  			client = c
@@ -218,7 +218,7 @@ index b71b3d0..8d6fced 100644
  import (
  	"crypto/tls"
 diff --git a/cmd/main.go b/cmd/main.go
-index bd53a30..57b125c 100644
+index bd53a30..93e8b3c 100644
 --- a/cmd/main.go
 +++ b/cmd/main.go
 @@ -1,12 +1,14 @@
