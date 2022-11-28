@@ -1,5 +1,9 @@
 # IEnvoyProxy Changlog
 
+## 1.2.1
+ - Fix a crash in Hysteria when connection to the server fails
+
+
 ## 1.2.0
  - rework V2Ray support so Websocket, RSTP, and Wechat can be started separately
 
