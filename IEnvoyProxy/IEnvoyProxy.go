@@ -3,9 +3,9 @@ package IEnvoyProxy
 import (
 	"fmt"
 	"encoding/json"
+	"log"
 	"net"
 	"os"
-	"runtime"
 	"strconv"
 	"time"
 	dnsttclient "www.bamsoftware.com/git/dnstt.git/dnstt-client"
@@ -61,7 +61,7 @@ var v2rayWechatRunning = false
 var StateLocation string
 
 func init() {
-	name, err != StateLocation = os.MkdirTemp()
+	name, err := os.MkdirTemp("", "pt_state-*")
 
 	if err != nil {
 		log.Fatal(err)
