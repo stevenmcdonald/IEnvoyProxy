@@ -1,6 +1,6 @@
 # IEnovyProxy
 
-This is a fork of IPtProxy (https://github.com/tladesignz/IPtProxy) modified to include censorship evadig proxies used by Envoy (https://github.com/greatfire/envoy)
+This is a fork of IPtProxy (https://github.com/tladesignz/IPtProxy) modified to include censorship evading proxies used by Envoy (https://github.com/greatfire/envoy)
 
 currently this includes:
 
