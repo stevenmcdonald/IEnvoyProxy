@@ -25,9 +25,7 @@ printf '\n\n--- Fetching submodule dependencies...\n'
 if test -e ".git"; then
     # There's a .git directory - we must be in the development pod.
     git submodule update --init --recursive
-    cd obfs4 || exit 1
-    git reset --hard
-    cd ../dnstt || exit 1
+    cd dnstt || exit 1
     git reset --hard
     cd ../hysteria || exit 1
     git reset --hard
@@ -37,10 +35,6 @@ if test -e ".git"; then
     cd ..
 else
     # No .git directory - That's a normal install.
-    git clone https://gitlab.com/yawning/obfs4.git
-    cd obfs4 || exit 1
-    git checkout --force --quiet 77af0cba
-    cd ..
     git clone https://www.bamsoftware.com/git/dnstt.git
     cd dnstt || exit 1
     git checkout --force --quiet 04f04590
@@ -48,6 +42,7 @@ else
     git clone https://github.com/HyNetwork/hysteria.git
     cd hysteria || exit 1
     git checkout --force --quiet da16c88
+    cd ..
     git clone https://github.com/v2fly/v2ray-core.git
     cd v2ray-core || exit 1
     git checkout --force --quiet b4069f74
@@ -56,7 +51,7 @@ fi
 
 # Apply patches.
 printf '\n\n--- Apply patches to submodules...\n'
-patch --directory=obfs4 --strip=1 < obfs4.patch
+echo `pwd`
 patch --directory=dnstt --strip=1 < dnstt.patch
 patch --directory=hysteria --strip=1 < hysteria.patch
 patch --directory=v2ray-core --strip=1 < v2ray-core.patch

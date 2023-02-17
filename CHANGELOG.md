@@ -1,5 +1,9 @@
 # IEnvoyProxy Changlog
 
+## 1.3.0
+ - Disable obfs4 support, we're not using is and it makes the bianary bigger. Maybe be removed in the future, but it's easy enough to re-enable for now
+ - Use more secure temp file storage
+
 ## 1.2.1
  - Fix a crash in Hysteria when connection to the server fails
 

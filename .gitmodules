@@ -1,6 +1,3 @@
-[submodule "obfs4"]
-	path = obfs4
-	url = https://gitlab.com/yawning/obfs4.git
 [submodule "dnstt"]
 	url = https://www.bamsoftware.com/git/dnstt.git
 	path = dnstt

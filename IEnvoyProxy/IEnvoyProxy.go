@@ -3,66 +3,15 @@ package IEnvoyProxy
 import (
 	"fmt"
 	"encoding/json"
-	"gitlab.com/yawning/obfs4.git/obfs4proxy"
+	"log"
 	"net"
 	"os"
-	"runtime"
 	"strconv"
 	"time"
 	dnsttclient "www.bamsoftware.com/git/dnstt.git/dnstt-client"
 	hysteria "github.com/tobyxdd/hysteria/cmd"
 	v2ray "github.com/v2fly/v2ray-core/envoy"
 )
-
-var meekPort = 47000
-
-// MeekPort - Port where Obfs4proxy will provide its Meek service.
-// Only use this after calling StartObfs4Proxy! It might have changed after that!
-//
-//goland:noinspection GoUnusedExportedFunction
-func MeekPort() int {
-	return meekPort
-}
-
-var obfs2Port = 47100
-
-// Obfs2Port - Port where Obfs4proxy will provide its Obfs2 service.
-// Only use this property after calling StartObfs4Proxy! It might have changed after that!
-//
-//goland:noinspection GoUnusedExportedFunction
-func Obfs2Port() int {
-	return obfs2Port
-}
-
-var obfs3Port = 47200
-
-// Obfs3Port - Port where Obfs4proxy will provide its Obfs3 service.
-// Only use this property after calling StartObfs4Proxy! It might have changed after that!
-//
-//goland:noinspection GoUnusedExportedFunction
-func Obfs3Port() int {
-	return obfs3Port
-}
-
-var obfs4Port = 47300
-
-// Obfs4Port - Port where Obfs4proxy will provide its Obfs4 service.
-// Only use this property after calling StartObfs4Proxy! It might have changed after that!
-//
-//goland:noinspection GoUnusedExportedFunction
-func Obfs4Port() int {
-	return obfs4Port
-}
-
-var scramblesuitPort = 47400
-
-// ScramblesuitPort - Port where Obfs4proxy will provide its Scramblesuit service.
-// Only use this property after calling StartObfs4Proxy! It might have changed after that!
-//
-//goland:noinspection GoUnusedExportedFunction
-func ScramblesuitPort() int {
-	return scramblesuitPort
-}
 
 var dnsttPort = 57000
 
@@ -112,107 +61,15 @@ var v2rayWechatRunning = false
 var StateLocation string
 
 func init() {
-	if //goland:noinspection GoBoolExpressions
-	runtime.GOOS == "android" {
-		StateLocation = "/data/local/tmp"
-	} else {
-		StateLocation = os.Getenv("TMPDIR")
+	name, err := os.MkdirTemp("", "pt_state-*")
+
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	StateLocation += "/pt_state"
-}
+	defer os.RemoveAll(name)
 
-// Obfs4ProxyVersion - The version of Obfs4Proxy bundled with IPtProxy.
-//
-//goland:noinspection GoUnusedExportedFunction
-func Obfs4ProxyVersion() string {
-	return obfs4proxy.Obfs4proxyVersion
-}
-
-// StartObfs4Proxy - Start the Obfs4Proxy.
-//
-// This will test, if the default ports are available. If not, it will increment them until there is.
-// Only use the port properties after calling this, they might have been changed!
-//
-// @param logLevel Log level (ERROR/WARN/INFO/DEBUG). Defaults to ERROR if empty string.
-//
-// @param enableLogging Log to TOR_PT_STATE_LOCATION/obfs4proxy.log.
-//
-// @param unsafeLogging Disable the address scrubber.
-//
-// @param proxy HTTP, SOCKS4 or SOCKS5 proxy to be used behind Obfs4proxy. E.g. "socks5://127.0.0.1:12345"
-//
-// @return Port number where Obfs4Proxy will listen on for Obfs4(!), if no error happens during start up.
-//	If you need the other ports, check MeekPort, Obfs2Port, Obfs3Port and ScramblesuitPort properties!
-//
-//goland:noinspection GoUnusedExportedFunction
-func StartObfs4Proxy(logLevel string, enableLogging, unsafeLogging bool, proxy string) int {
-	if obfs4ProxyRunning {
-		return obfs4Port
-	}
-
-	obfs4ProxyRunning = true
-
-	for !IsPortAvailable(meekPort) {
-		meekPort++
-	}
-
-	if meekPort >= obfs2Port {
-		obfs2Port = meekPort + 1
-	}
-
-	for !IsPortAvailable(obfs2Port) {
-		obfs2Port++
-	}
-
-	if obfs2Port >= obfs3Port {
-		obfs3Port = obfs2Port + 1
-	}
-
-	for !IsPortAvailable(obfs3Port) {
-		obfs3Port++
-	}
-
-	if obfs3Port >= obfs4Port {
-		obfs4Port = obfs3Port + 1
-	}
-
-	for !IsPortAvailable(obfs4Port) {
-		obfs4Port++
-	}
-
-	if obfs4Port >= scramblesuitPort {
-		scramblesuitPort = obfs4Port + 1
-	}
-
-	for !IsPortAvailable(scramblesuitPort) {
-		scramblesuitPort++
-	}
-
-	fixEnv()
-
-	if len(proxy) > 0 {
-		_ = os.Setenv("TOR_PT_PROXY", proxy)
-	} else {
-		_ = os.Unsetenv("TOR_PT_PROXY")
-	}
-
-	go obfs4proxy.Start(&meekPort, &obfs2Port, &obfs3Port, &obfs4Port, &scramblesuitPort, &logLevel, &enableLogging, &unsafeLogging)
-
-	return obfs4Port
-}
-
-// StopObfs4Proxy - Stop the Obfs4Proxy.
-//
-//goland:noinspection GoUnusedExportedFunction
-func StopObfs4Proxy() {
-	if !obfs4ProxyRunning {
-		return
-	}
-
-	go obfs4proxy.Stop()
-
-	obfs4ProxyRunning = false
+	StateLocation = name
 }
 
 // StartDnstt - Start the Dnstt client.
