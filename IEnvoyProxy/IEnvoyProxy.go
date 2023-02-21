@@ -50,27 +50,12 @@ func V2rayWsPort() int {
 	return v2rayWsPort
 }
 
-var obfs4ProxyRunning = false
 var dnsttRunning = false
 var hysteriaRunning = false
 var v2rayWsRunning = false
 var v2raySrtpRunning = false
 var v2rayWechatRunning = false
 
-// StateLocation - Override TOR_PT_STATE_LOCATION, which defaults to "$TMPDIR/pt_state".
-var StateLocation string
-
-func init() {
-	name, err := os.MkdirTemp("", "pt_state-*")
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer os.RemoveAll(name)
-
-	StateLocation = name
-}
 
 // StartDnstt - Start the Dnstt client.
 //
@@ -105,8 +90,6 @@ func StartDnstt(ttDomain, dohURL, dotAddr, pubkey string) int {
 	//     -utls none
 	var utlsDistribution = "3*Firefox,1*iOS"
 	var listenAddr = fmt.Sprintf("localhost:%d", dnsttPort)
-
-	fixEnv()
 
 	go dnsttclient.Start(&ttDomain, &listenAddr, &dohURL, &dotAddr, &pubkey, &utlsDistribution)
 
@@ -305,20 +288,4 @@ func IsPortAvailable(port int) bool {
 	_ = conn.Close()
 
 	return false
-}
-
-// Hack: Set some environment variables that are either
-// required, or values that we want. Have to do this here, since we can only
-// launch this in a thread and the manipulation of environment variables
-// from within an iOS app won't end up in goptlib properly.
-//
-// Note: This might be called multiple times when using different functions here,
-// but that doesn't necessarily mean, that the values set are independent each
-// time this is called. It's still the ENVIRONMENT, we're changing here, so there might
-// be race conditions.
-func fixEnv() {
-	_ = os.Setenv("TOR_PT_CLIENT_TRANSPORTS", "meek_lite,obfs2,obfs3,obfs4,scramblesuit")
-	_ = os.Setenv("TOR_PT_MANAGED_TRANSPORT_VER", "1")
-
-	_ = os.Setenv("TOR_PT_STATE_LOCATION", StateLocation)
 }
