@@ -3,9 +3,7 @@ package IEnvoyProxy
 import (
 	"fmt"
 	"encoding/json"
-	"log"
 	"net"
-	"os"
 	"strconv"
 	"time"
 	dnsttclient "www.bamsoftware.com/git/dnstt.git/dnstt-client"
