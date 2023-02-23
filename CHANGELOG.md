@@ -1,5 +1,9 @@
 # IEnvoyProxy Changlog
 
+## 1.3.1
+ - Remove the PT environment variables, nothing seems to be using them
+ - Set v2ray QUIC protocols to log at "error" level instead of "debug"
+
 ## 1.3.0
  - Disable obfs4 support, we're not using is and it makes the bianary bigger. Maybe be removed in the future, but it's easy enough to re-enable for now
  - Use more secure temp file storage
