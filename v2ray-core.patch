@@ -121,7 +121,7 @@ index 00000000..6a153e8c
 +	jsonConfig := fmt.Sprintf(`
 +  {
 +    "log": {
-+      "loglevel": "debug"
++      "loglevel": "error"
 +    },
 +    "inbounds": [
 +      %s
