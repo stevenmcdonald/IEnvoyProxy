@@ -121,7 +121,7 @@ index 00000000..6a153e8c
 +	jsonConfig := fmt.Sprintf(`
 +  {
 +    "log": {
-+      "loglevel": "debug"
++      "loglevel": "error"
 +    },
 +    "inbounds": [
 +      %s
@@ -244,7 +244,7 @@ index 00000000..6a153e8c
 +	defer server.Close()
 +
 +	{
-+		signal.Notify(osWsSignals, syscall.SIGTERM)
++		signal.Notify(osSrtpSignals, syscall.SIGTERM)
 +		<-osSrtpSignals
 +	}
 +
@@ -291,7 +291,7 @@ index 00000000..6a153e8c
 +	defer server.Close()
 +
 +	{
-+		signal.Notify(osWsSignals, syscall.SIGTERM)
++		signal.Notify(osWechatSignals, syscall.SIGTERM)
 +		<-osWechatSignals
 +	}
 +
