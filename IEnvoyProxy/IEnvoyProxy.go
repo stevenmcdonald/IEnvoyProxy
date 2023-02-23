@@ -3,6 +3,7 @@ package IEnvoyProxy
 import (
 	"fmt"
 	"encoding/json"
+	"log"
 	"net"
 	"strconv"
 	"time"
@@ -69,7 +70,9 @@ var v2rayWechatRunning = false
 //
 //goland:noinspection GoUnusedExportedFunction
 func StartDnstt(ttDomain, dohURL, dotAddr, pubkey string) int {
+	log.Println("Starting DNSTT")
 	if dnsttRunning {
+		log.Printf("DNSTT already running on port %d", dnsttPort)
 		return dnsttPort
 	}
 
@@ -90,6 +93,7 @@ func StartDnstt(ttDomain, dohURL, dotAddr, pubkey string) int {
 	var listenAddr = fmt.Sprintf("localhost:%d", dnsttPort)
 
 	go dnsttclient.Start(&ttDomain, &listenAddr, &dohURL, &dotAddr, &pubkey, &utlsDistribution)
+	log.Println("DNSTT started on port %d", dnsttPort)
 
 	return dnsttPort
 }
@@ -131,7 +135,9 @@ type HysteriaConfig struct {
 //
 // @param ca Path to Root CA used by server (for self signed certs)
 func StartHysteria(server, obfs, ca string) int {
+	log.Println("Starting Hysteria")
 	if hysteriaRunning {
+		log.Printf("Hysteria already running on %d", hysteriaPort)
 		return hysteriaPort
 	}
 
@@ -165,6 +171,7 @@ func StartHysteria(server, obfs, ca string) int {
 	// fmt.Printf("config: %s", string(confJson))
 
 	go hysteria.Start(&confJson)
+	log.Printf("Hysteria started on port %d", hysteriaPort)
 
 	return hysteriaPort
 }
@@ -214,7 +221,9 @@ func StopV2RayWs() {
 }
 
 func StartV2raySrtp(serverAddress, serverPort, id string) int {
+	log.Println("Starting V2Ray SRTP")
 	if v2raySrtpRunning {
+		log.Printf("V2Ray SRTP already running on %d", v2raySrtpPort)
 		return v2raySrtpPort
 	}
 
@@ -224,6 +233,7 @@ func StartV2raySrtp(serverAddress, serverPort, id string) int {
 	v2raySrtpRunning = true
 
 	go v2ray.StartSrtp(&clientPort, &serverAddress, &serverPort, &id)
+	log.Printf("V2Ray SRTP started on %d", v2raySrtpPort)
 
 	return v2raySrtpPort
 }
@@ -239,7 +249,9 @@ func StopV2RaySrtp() {
 }
 
 func StartV2RayWechat(serverAddress, serverPort, id string) int {
+	log.Println("Starting V2Ray WeChat")
 	if v2rayWechatRunning {
+		log.Printf("V2Ray WeChat already running on %d", v2rayWechatPort)
 		return v2rayWechatPort
 	}
 
@@ -249,6 +261,7 @@ func StartV2RayWechat(serverAddress, serverPort, id string) int {
 	v2rayWechatRunning = true
 
 	go v2ray.StartWechat(&clientPort, &serverAddress, &serverPort, &id)
+	log.Printf("V2Ray WeChat started on %d", v2rayWechatPort)
 
 	return v2rayWechatPort
 }
