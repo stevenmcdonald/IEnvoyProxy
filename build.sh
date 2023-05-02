@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -euo pipefail
+
 TARGET=ios,iossimulator,macos
 OUTPUT=IEnvoyProxy.xcframework
 
