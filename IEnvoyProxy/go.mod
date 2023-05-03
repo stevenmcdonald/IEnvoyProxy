@@ -8,7 +8,6 @@ replace (
 	github.com/pion/dtls/v2 => github.com/pion/dtls/v2 v2.0.12
 	github.com/tobyxdd/hysteria v1.0.5 => ../hysteria
 	github.com/v2fly/v2ray-core v4.15.0+incompatible => ../v2ray-core
-	www.bamsoftware.com/git/dnstt.git => ../dnstt
 )
 
 require (
@@ -23,5 +22,4 @@ require (
 	github.com/v2fly/v2ray-core/v5 v5.0.7 // indirect
 	golang.org/x/crypto v0.0.0-20220516162934-403b01795ae8 // indirect
 	golang.org/x/mobile v0.0.0-20221110043201-43a038452099 // indirect
-	www.bamsoftware.com/git/dnstt.git v0.0.0-00010101000000-000000000000
 )

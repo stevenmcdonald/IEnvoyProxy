@@ -7,20 +7,9 @@ import (
 	"net"
 	"strconv"
 	"time"
-	dnsttclient "www.bamsoftware.com/git/dnstt.git/dnstt-client"
 	hysteria "github.com/tobyxdd/hysteria/cmd"
 	v2ray "github.com/v2fly/v2ray-core/envoy"
 )
-
-var dnsttPort = 57000
-
-// DnsttPort - Port where Dnstt will provide its service.
-// Only use this property after calling StartDnstt! It might have changed after that!
-//
-//goland:noinspection GoUnusedExportedFunction
-func DnsttPort() int {
-	return dnsttPort
-}
 
 var hysteriaPort = 47500
 
@@ -49,67 +38,10 @@ func V2rayWsPort() int {
 	return v2rayWsPort
 }
 
-var dnsttRunning = false
 var hysteriaRunning = false
 var v2rayWsRunning = false
 var v2raySrtpRunning = false
 var v2rayWechatRunning = false
-
-
-// StartDnstt - Start the Dnstt client.
-//
-// @param ttDomain	subdomain name for DNSTT
-//
-// @param dohURL OPTIONAL. URL of a DoH resolver. Use either this or `dotAddr`.
-//
-// @param dotAddr OPTIONAL. Address of a DoT resolver. Use either this or `dohURL`.
-//
-// @param pubkey The DNSTT's server public key (as hex digits).
-//
-// @return Port number where Dnstt will listen on, if no error happens during start up.
-//
-//goland:noinspection GoUnusedExportedFunction
-func StartDnstt(ttDomain, dohURL, dotAddr, pubkey string) int {
-	log.Println("Starting DNSTT")
-	if dnsttRunning {
-		log.Printf("DNSTT already running on port %d", dnsttPort)
-		return dnsttPort
-	}
-
-	dnsttRunning = true
-
-	dnsttPort = findPort(dnsttPort)
-
-	// From the dnstt docs:
-	//
-	// In -doh and -dot modes, the program's TLS fingerprint is camouflaged with
-	// uTLS by default. The specific TLS fingerprint is selected randomly from a
-	// weighted distribution. You can set your own distribution (or specific single
-	// fingerprint) using the -utls option. The special value "none" disables uTLS.
-	//     -utls '3*Firefox,2*Chrome,1*iOS'
-	//     -utls Firefox
-	//     -utls none
-	var utlsDistribution = "3*Firefox,1*iOS"
-	var listenAddr = fmt.Sprintf("localhost:%d", dnsttPort)
-
-	go dnsttclient.Start(&ttDomain, &listenAddr, &dohURL, &dotAddr, &pubkey, &utlsDistribution)
-	log.Println("DNSTT started on port %d", dnsttPort)
-
-	return dnsttPort
-}
-
-// StopDnstt - Stop the Dnstt client.
-//
-//goland:noinspection GoUnusedExportedFunction
-func StopDnstt() {
-	if !dnsttRunning {
-		return
-	}
-
-	go dnsttclient.Stop()
-
-	dnsttRunning = false
-}
 
 type HysteriaListen struct {
 	Listen string `json:"listen"`

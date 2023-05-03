@@ -26,9 +26,6 @@ go install golang.org/x/mobile/cmd/gomobile@latest
 printf '\n\n--- Fetching submodule dependencies...\n'
 if test -e ".git"; then
     # There's a .git directory - we must be in the development pod.
-    git submodule update --init --recursive
-    cd dnstt || exit 1
-    git reset --hard
     cd ../hysteria || exit 1
     git reset --hard
     cd ../v2ray-core || exit 1
@@ -37,10 +34,6 @@ if test -e ".git"; then
     cd ..
 else
     # No .git directory - That's a normal install.
-    git clone https://www.bamsoftware.com/git/dnstt.git
-    cd dnstt || exit 1
-    git checkout --force --quiet 04f04590
-    cd ..
     git clone https://github.com/HyNetwork/hysteria.git
     cd hysteria || exit 1
     git checkout --force --quiet da16c88
@@ -54,7 +47,6 @@ fi
 # Apply patches.
 printf '\n\n--- Apply patches to submodules...\n'
 echo `pwd`
-patch --directory=dnstt --strip=1 < dnstt.patch
 patch --directory=hysteria --strip=1 < hysteria.patch
 patch --directory=v2ray-core --strip=1 < v2ray-core.patch
 
