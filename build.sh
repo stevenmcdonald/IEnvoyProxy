@@ -26,7 +26,7 @@ go install golang.org/x/mobile/cmd/gomobile@latest
 printf '\n\n--- Fetching submodule dependencies...\n'
 if test -e ".git"; then
     # There's a .git directory - we must be in the development pod.
-    cd ../hysteria || exit 1
+    cd hysteria || exit 1
     git reset --hard
     cd ../v2ray-core || exit 1
     git reset --hard
