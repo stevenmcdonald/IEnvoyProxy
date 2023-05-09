@@ -2,8 +2,6 @@
 
 set -euo pipefail
 
-set -x
-
 TARGET=ios,iossimulator,macos
 OUTPUT=IEnvoyProxy.xcframework
 TEMPDIR="${TEMPDIR:/tmp/}"
