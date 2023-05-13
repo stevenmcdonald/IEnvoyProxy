@@ -7,8 +7,11 @@ import (
 	"net"
 	"strconv"
 	"time"
+	"os"
+
 	hysteria "github.com/tobyxdd/hysteria/cmd"
 	v2ray "github.com/v2fly/v2ray-core/envoy"
+	snowflakeclient "git.torproject.org/pluggable-transports/snowflake.git/v2/client"
 )
 
 var hysteriaPort = 47500
@@ -25,6 +28,7 @@ func HysteriaPort() int {
 var v2raySrtpPort = 47600
 var v2rayWechatPort = 47700
 var v2rayWsPort = 47800
+var snowflakePort = 47900
 
 func V2raySrtpPort() int {
 	return v2raySrtpPort
@@ -38,10 +42,21 @@ func V2rayWsPort() int {
 	return v2rayWsPort
 }
 
+// SnowflakePort - Port where Snowflake will provide its service.
+// Only use this property after calling StartSnowflake! It might have changed after that!
+//
+//goland:noinspection GoUnusedExportedFunction
+func SnowflakePort() int {
+	return snowflakePort
+}
+
 var hysteriaRunning = false
 var v2rayWsRunning = false
 var v2raySrtpRunning = false
 var v2rayWechatRunning = false
+var snowflakeRunning = false
+
+/// Hysteria
 
 type HysteriaListen struct {
 	Listen string `json:"listen"`
@@ -117,6 +132,8 @@ func StopHysteria() {
 
 	hysteriaRunning = false
 }
+
+/// V2Ray
 
 // StartV2RayWs - Start V2Ray client for websocket transport
 //
@@ -207,6 +224,84 @@ func StopV2RayWechat() {
 
 	v2rayWechatRunning = false
 }
+
+/// Snowflake
+
+// StartSnowflake - Start the Snowflake client.
+//
+// @param ice Comma-separated list of ICE servers.
+//
+// @param url URL of signaling broker.
+//
+// @param front Front domain.
+//
+// @param ampCache OPTIONAL. URL of AMP cache to use as a proxy for signaling.
+//
+//	Only needed when you want to do the rendezvous over AMP instead of a domain fronted server.
+//
+// @param logFile Name of log file. OPTIONAL. Defaults to no log.
+//
+// @param logToStateDir Resolve the log file relative to Tor's PT state dir.
+//
+// @param keepLocalAddresses Keep local LAN address ICE candidates.
+//
+// @param unsafeLogging Prevent logs from being scrubbed.
+//
+// @param maxPeers Capacity for number of multiplexed WebRTC peers. DEFAULTs to 1 if less than that.
+//
+// @return Port number where Snowflake will listen on, if no error happens during start up.
+//
+//goland:noinspection GoUnusedExportedFunction
+func StartSnowflake(ice, url, front, ampCache, logFile string, logToStateDir, keepLocalAddresses, unsafeLogging bool, maxPeers int) int {
+	if snowflakeRunning {
+		return snowflakePort
+	}
+
+	snowflakeRunning = true
+
+	for !IsPortAvailable(snowflakePort) {
+		snowflakePort++
+	}
+
+	fixEnv()
+
+	go snowflakeclient.Start(&snowflakePort, &ice, &url, &front, &ampCache, &logFile, &logToStateDir, &keepLocalAddresses, &unsafeLogging, &maxPeers)
+
+	return snowflakePort
+}
+
+// StopSnowflake - Stop the Snowflake client.
+//
+//goland:noinspection GoUnusedExportedFunction
+func StopSnowflake() {
+	if !snowflakeRunning {
+		return
+	}
+
+	go snowflakeclient.Stop()
+
+	snowflakeRunning = false
+}
+
+// SnowflakeClientConnected - Interface to use when clients connect
+// to the snowflake proxy. For use with StartSnowflakeProxy
+type SnowflakeClientConnected interface {
+	// Connected - callback method to handle snowflake proxy client connections.
+	Connected()
+}
+
+
+///////////////////
+// Helper functions
+
+// in IPtProxy, this handles the PT state directoy stuff...
+// we only have snowflake for now, and that only needs a couple env
+// vars set.
+func fixEnv() {
+	_ = os.Setenv("TOR_PT_CLIENT_TRANSPORTS", "snowflake")
+	_ = os.Setenv("TOR_PT_MANAGED_TRANSPORT_VER", "1")
+}
+
 
 func findPort(port int) int {
 	temp := port
