@@ -1,5 +1,10 @@
 # IEnvoyProxy Changlog
 
+## 1.4.0
+ - Remove DNSTT (for binary size, currently unused)
+ - Add Snowflake client (back) from IPtProxy
+ - Some build script security updates from IPtProxy
+
 ## 1.3.1
  - Remove the PT environment variables, nothing seems to be using them
  - Set v2ray QUIC protocols to log at "error" level instead of "debug"
