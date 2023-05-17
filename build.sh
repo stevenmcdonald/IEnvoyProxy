@@ -12,6 +12,7 @@ if [[ -z ${TMPDIR} ]]; then
 else
     # Linux
     TMPDIR="${TMPDIR}IEnvoyProxy"
+    mkdir ${TMPDIR} || true
 fi
 # TMPDIR may be unbound until now
 set -u
@@ -64,11 +65,11 @@ else
     # No .git directory - That's a normal install.
     git clone https://github.com/HyNetwork/hysteria.git "$TMPDIR/hysteria"
     cd hysteria || exit 1
-    git checkout --force --quiet da16c88
+    git checkout --force --quiet 160145f7
     cd ..
     git clone https://github.com/v2fly/v2ray-core.git "$TMPDIR/v2ray-core"
     cd v2ray-core || exit 1
-    git checkout --force --quiet b4069f74
+    git checkout --force --quiet 9b526285
     cd ..
     git clone https://git.torproject.org/pluggable-transports/snowflake.git "$TMPDIR/snowflake"
     cd "$TMPDIR/snowflake" || exit 1

@@ -1,5 +1,9 @@
 # IEnvoyProxy Changlog
 
+## 1.4.1
+ - Update v2ray to v4.45.2 for security fixes
+ - Update hysteria to v1.1.0 (the latest our patches apply cleanly to)
+
 ## 1.4.0
  - Remove DNSTT (for binary size, currently unused)
  - Add Snowflake client (back) from IPtProxy
