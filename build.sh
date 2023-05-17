@@ -1,13 +1,22 @@
 #!/bin/bash
 
-set -euo pipefail
+set -eo pipefail
 
 TARGET=ios,iossimulator,macos
 OUTPUT=IEnvoyProxy.xcframework
-TEMPDIR="${TEMPDIR:/tmp/}"
-TEMPDIR="${TMPDIR}IEnvoyProxy"
 
-echo "TEMPDIR: ${TEMPDIR}"
+# test if TMPDIR is unset: https://stackoverflow.com/a/13864829
+if [[ -z ${TMPDIR} ]]; then
+    # macOS
+    TMPDIR=$(mktemp -dq)
+else
+    # Linux
+    TMPDIR="${TMPDIR}IEnvoyProxy"
+fi
+# TMPDIR may be unbound until now
+set -u
+
+# echo "TMPDIR: ${TMPDIR}"
 
 if test "$1" = "android"; then
   TARGET=android
@@ -29,11 +38,11 @@ go install golang.org/x/mobile/cmd/gomobile@latest
 # Prepare build environment
 # Go leaks the build path in to the binary, so use a temp dir to build
 # based on https://github.com/tladesignz/IPtProxy/pull/38
-printf '\n\n--- Prepare build environment at %s...\n' "$TEMPDIR"
+printf '\n\n--- Prepare build environment at %s...\n' "$TMPDIR"
 CURRENT=$PWD
-rm -rf "$TEMPDIR" || true
-mkdir -p "$TEMPDIR"
-cp -a IEnvoyProxy "$TEMPDIR/"
+rm -rf "$TMPDIR" || true
+mkdir -p "$TMPDIR"
+cp -a IEnvoyProxy "$TMPDIR/"
 
 # Fetch submodules.
 printf '\n\n--- Fetching submodule dependencies...\n'
@@ -42,27 +51,27 @@ if test -e ".git"; then
     git submodule update --init --recursive
     cd hysteria || exit 1
     git reset --hard
-    cp -a . "$TEMPDIR/hysteria"
+    cp -a . "$TMPDIR/hysteria"
     cd ../v2ray-core || exit 1
     git reset --hard
     git clean -ffd # we add a file
-    cp -a . "$TEMPDIR/v2ray-core"
+    cp -a . "$TMPDIR/v2ray-core"
     cd ../snowflake || exit 1
     git reset --hard
-    cp -a . "$TEMPDIR/snowflake"
+    cp -a . "$TMPDIR/snowflake"
     cd ..
 else
     # No .git directory - That's a normal install.
-    git clone https://github.com/HyNetwork/hysteria.git "$TEMPDIR/hysteria"
+    git clone https://github.com/HyNetwork/hysteria.git "$TMPDIR/hysteria"
     cd hysteria || exit 1
     git checkout --force --quiet da16c88
     cd ..
-    git clone https://github.com/v2fly/v2ray-core.git "$TEMPDIR/v2ray-core"
+    git clone https://github.com/v2fly/v2ray-core.git "$TMPDIR/v2ray-core"
     cd v2ray-core || exit 1
     git checkout --force --quiet b4069f74
     cd ..
-    git clone https://git.torproject.org/pluggable-transports/snowflake.git "$TEMPDIR/snowflake"
-    cd "$TEMPDIR/snowflake" || exit 1
+    git clone https://git.torproject.org/pluggable-transports/snowflake.git "$TMPDIR/snowflake"
+    cd "$TMPDIR/snowflake" || exit 1
     git checkout --force --quiet 7b77001
     cd "$CURRENT" || exit 1
 fi
@@ -70,19 +79,19 @@ fi
 # Apply patches.
 printf '\n\n--- Apply patches to submodules...\n'
 echo `pwd`
-patch --directory=$TEMPDIR/hysteria --strip=1 < hysteria.patch
-patch --directory=$TEMPDIR/v2ray-core --strip=1 < v2ray-core.patch
-patch --directory=$TEMPDIR/snowflake --strip=1 < snowflake.patch
+patch --directory=$TMPDIR/hysteria --strip=1 < hysteria.patch
+patch --directory=$TMPDIR/v2ray-core --strip=1 < v2ray-core.patch
+patch --directory=$TMPDIR/snowflake --strip=1 < snowflake.patch
 
 # Compile framework.
 printf '\n\n--- Compile %s...\n' "$OUTPUT"
 export PATH=~/go/bin:$PATH
-cd "${TEMPDIR}/IEnvoyProxy" || exit 1
+cd "${TMPDIR}/IEnvoyProxy" || exit 1
 
 gomobile init
 
 MACOSX_DEPLOYMENT_TARGET=11.0 gomobile bind -target=$TARGET -o $CURRENT/$OUTPUT -iosversion=11.0 -androidapi=19 -v -tags=netcgo -trimpath
 
-rm -rf "$TEMPDIR"
+rm -rf "$TMPDIR"
 
 printf '\n\n--- Done.\n\n'
