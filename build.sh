@@ -65,7 +65,7 @@ else
     # No .git directory - That's a normal install.
     git clone https://github.com/HyNetwork/hysteria.git "$TMPDIR/hysteria"
     cd hysteria || exit 1
-    git checkout --force --quiet 160145f7
+    git checkout --force --quiet da16c886
     cd ..
     git clone https://github.com/v2fly/v2ray-core.git "$TMPDIR/v2ray-core"
     cd v2ray-core || exit 1
