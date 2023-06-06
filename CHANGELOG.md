@@ -1,5 +1,8 @@
 # IEnvoyProxy Changlog
 
+## 1.4.2
+ - Default UTLs to random masquerading by default for snowflake
+
 ## 1.4.1
  - Update v2ray to v4.45.2 for security fixes
  - Update hysteria to v1.1.0 (the latest our patches apply cleanly to)
