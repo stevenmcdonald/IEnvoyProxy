@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	git.torproject.org/pluggable-transports/snowflake.git/v2 v2.0.0-00010101000000-000000000000
-	github.com/apernet/hysteria/app v0.0.0-00010101000000-000000000000
+	github.com/apernet/hysteria/app v1.3.4
 	github.com/v2fly/v2ray-core v4.45.2+incompatible
 )
 
@@ -154,7 +154,7 @@ require (
 replace (
 	git.torproject.org/pluggable-transports/snowflake.git/v2 => ../snowflake
 	github.com/LiamHaworth/go-tproxy => github.com/apernet/go-tproxy v0.0.0-20221025153553-ed04a2935f88
-	github.com/apernet/hysteria/app => ../hysteria/app
+	github.com/apernet/hysteria/app v1.3.4 => ../hysteria/app
 	github.com/apernet/hysteria/core => ../hysteria/core
 	github.com/elazarl/goproxy => github.com/apernet/goproxy v0.0.0-20221124043924-155acfaf278f
 	github.com/pion/dtls/v2 v2.1.5 => github.com/xiaokangwang/dtls/v2 v2.0.0-20230118142434-16e5cc8ce01c
