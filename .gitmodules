@@ -4,6 +4,7 @@
 [submodule "hysteria"]
 	path = hysteria
 	url = https://github.com/HyNetwork/hysteria.git
+	branch = v1.3.4
 [submodule "v2ray-core"]
 	path = v2ray-core
 	url = https://github.com/v2fly/v2ray-core.git
