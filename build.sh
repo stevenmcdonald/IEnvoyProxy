@@ -32,7 +32,7 @@ if test -e $OUTPUT; then
 fi
 
 # Install dependencies. Go itself is a prerequisite.
-printf '\n--- Golang 1.16 or up needs to be installed! Try "brew install go" on MacOS or "snap install go" on Linux if we fail further down!'
+printf '\n--- Golang 1.19 or up needs to be installed! Try "brew install go" on MacOS or "snap install go" on Linux if we fail further down!'
 printf '\n--- Installing gomobile...\n'
 go install golang.org/x/mobile/cmd/gomobile@latest
 
@@ -65,7 +65,7 @@ else
     # No .git directory - That's a normal install.
     git clone https://github.com/HyNetwork/hysteria.git "$TMPDIR/hysteria"
     cd hysteria || exit 1
-    git checkout --force --quiet da16c886
+    git checkout --force --quiet b94f8a1
     cd ..
     git clone https://github.com/v2fly/v2ray-core.git "$TMPDIR/v2ray-core"
     cd v2ray-core || exit 1
