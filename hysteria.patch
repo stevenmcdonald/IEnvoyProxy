@@ -1,5 +1,5 @@
  app/cmd/acme.go          |  2 +-
- app/cmd/client.go        | 45 ++++++++++++++++++++++-----------------------
+ app/cmd/client.go        | 46 ++++++++++++++++++++++------------------------
  app/cmd/client_gpl.go    |  2 +-
  app/cmd/client_nongpl.go |  2 +-
  app/cmd/completion.go    |  2 +-
@@ -7,13 +7,13 @@
  app/cmd/config_test.go   |  2 +-
  app/cmd/ipmasker.go      |  2 +-
  app/cmd/kploader.go      |  2 +-
- app/cmd/main.go          | 42 +++++++++++++++++++++++++++++++++++++++---
+ app/cmd/main.go          | 44 +++++++++++++++++++++++++++++++++++++++++---
  app/cmd/mmdb.go          |  2 +-
  app/cmd/prom.go          |  2 +-
  app/cmd/resolver.go      |  2 +-
  app/cmd/server.go        |  2 +-
  app/cmd/update.go        |  2 +-
- 15 files changed, 74 insertions(+), 39 deletions(-)
+ 15 files changed, 76 insertions(+), 40 deletions(-)
 
 diff --git a/app/cmd/acme.go b/app/cmd/acme.go
 index 9b2a26a..4c8657f 100644
@@ -26,16 +26,23 @@ index 9b2a26a..4c8657f 100644
  import (
  	"context"
 diff --git a/app/cmd/client.go b/app/cmd/client.go
-index 3f51e86..71bf2c7 100644
+index 3f51e86..aca0b39 100644
 --- a/app/cmd/client.go
 +++ b/app/cmd/client.go
-@@ -1,4 +1,4 @@
+@@ -1,11 +1,10 @@
 -package main
 +package hysteria
  
  import (
  	"crypto/tls"
-@@ -59,18 +59,17 @@ func client(config *clientConfig) {
+ 	"crypto/x509"
+ 	"errors"
+ 	"io"
+-	"io/ioutil"
+ 	"net"
+ 	"net/http"
+ 	"os"
+@@ -59,18 +58,17 @@ func client(config *clientConfig) {
  	}
  	// Load CA
  	if len(config.CustomCA) > 0 {
@@ -63,7 +70,7 @@ index 3f51e86..71bf2c7 100644
  		}
  		tlsConfig.RootCAs = cp
  	}
-@@ -101,7 +100,7 @@ func client(config *clientConfig) {
+@@ -101,7 +99,7 @@ func client(config *clientConfig) {
  	if pktConnFuncFactory == nil {
  		logrus.WithFields(logrus.Fields{
  			"protocol": config.Protocol,
@@ -72,7 +79,7 @@ index 3f51e86..71bf2c7 100644
  	}
  	pktConnFunc := pktConnFuncFactory(config.Obfs, time.Duration(config.HopInterval)*time.Second)
  	// Resolve preference
-@@ -126,7 +125,7 @@ func client(config *clientConfig) {
+@@ -126,7 +124,7 @@ func client(config *clientConfig) {
  			logrus.WithFields(logrus.Fields{
  				"error": err,
  				"file":  config.ACL,
@@ -81,7 +88,7 @@ index 3f51e86..71bf2c7 100644
  		}
  	}
  	// Client
-@@ -142,7 +141,7 @@ func client(config *clientConfig) {
+@@ -142,7 +140,7 @@ func client(config *clientConfig) {
  					logrus.WithFields(logrus.Fields{
  						"addr":  config.Server,
  						"error": err,
@@ -90,7 +97,7 @@ index 3f51e86..71bf2c7 100644
  				} else {
  					logrus.WithFields(logrus.Fields{
  						"addr":  config.Server,
-@@ -163,7 +162,7 @@ func client(config *clientConfig) {
+@@ -163,7 +161,7 @@ func client(config *clientConfig) {
  				}).Info("Retrying...")
  				time.Sleep(time.Duration(retryInterval) * time.Second)
  			} else {
@@ -99,7 +106,7 @@ index 3f51e86..71bf2c7 100644
  			}
  		} else {
  			client = c
-@@ -228,7 +227,7 @@ func client(config *clientConfig) {
+@@ -228,7 +226,7 @@ func client(config *clientConfig) {
  					}
  				})
  			if err != nil {
@@ -108,7 +115,7 @@ index 3f51e86..71bf2c7 100644
  			}
  			logrus.WithField("addr", config.SOCKS5.Listen).Info("SOCKS5 server up and running")
  			errChan <- socks5server.ListenAndServe()
-@@ -258,7 +257,7 @@ func client(config *clientConfig) {
+@@ -258,7 +256,7 @@ func client(config *clientConfig) {
  					}).Info("HTTP error")
  				})
  			if err != nil {
@@ -117,7 +124,7 @@ index 3f51e86..71bf2c7 100644
  			}
  			if config.HTTP.Cert != "" && config.HTTP.Key != "" {
  				logrus.WithField("addr", config.HTTP.Listen).Info("HTTPS server up and running")
-@@ -305,7 +304,7 @@ func client(config *clientConfig) {
+@@ -305,7 +303,7 @@ func client(config *clientConfig) {
  						}
  					})
  				if err != nil {
@@ -126,7 +133,7 @@ index 3f51e86..71bf2c7 100644
  				}
  				logrus.WithField("addr", tcpr.Listen).Info("TCP relay up and running")
  				errChan <- rl.ListenAndServe()
-@@ -344,7 +343,7 @@ func client(config *clientConfig) {
+@@ -344,7 +342,7 @@ func client(config *clientConfig) {
  						}
  					})
  				if err != nil {
@@ -135,7 +142,7 @@ index 3f51e86..71bf2c7 100644
  				}
  				logrus.WithField("addr", udpr.Listen).Info("UDP relay up and running")
  				errChan <- rl.ListenAndServe()
-@@ -377,7 +376,7 @@ func client(config *clientConfig) {
+@@ -377,7 +375,7 @@ func client(config *clientConfig) {
  					}
  				})
  			if err != nil {
@@ -144,7 +151,7 @@ index 3f51e86..71bf2c7 100644
  			}
  			logrus.WithField("addr", config.TCPTProxy.Listen).Info("TCP TProxy up and running")
  			errChan <- rl.ListenAndServe()
-@@ -409,7 +408,7 @@ func client(config *clientConfig) {
+@@ -409,7 +407,7 @@ func client(config *clientConfig) {
  					}
  				})
  			if err != nil {
@@ -153,7 +160,7 @@ index 3f51e86..71bf2c7 100644
  			}
  			logrus.WithField("addr", config.UDPTProxy.Listen).Info("UDP TProxy up and running")
  			errChan <- rl.ListenAndServe()
-@@ -441,7 +440,7 @@ func client(config *clientConfig) {
+@@ -441,7 +439,7 @@ func client(config *clientConfig) {
  					}
  				})
  			if err != nil {
@@ -162,7 +169,7 @@ index 3f51e86..71bf2c7 100644
  			}
  			logrus.WithField("addr", config.TCPRedirect.Listen).Info("TCP Redirect up and running")
  			errChan <- rl.ListenAndServe()
-@@ -449,7 +448,7 @@ func client(config *clientConfig) {
+@@ -449,7 +447,7 @@ func client(config *clientConfig) {
  	}
  
  	err := <-errChan
@@ -248,7 +255,7 @@ index 5d6f60e..11a687a 100644
  import (
  	"crypto/tls"
 diff --git a/app/cmd/main.go b/app/cmd/main.go
-index 36ef82c..1da73da 100644
+index 36ef82c..bf992a0 100644
 --- a/app/cmd/main.go
 +++ b/app/cmd/main.go
 @@ -1,4 +1,4 @@
@@ -257,7 +264,17 @@ index 36ef82c..1da73da 100644
  
  import (
  	"fmt"
-@@ -33,12 +33,16 @@ var (
+@@ -7,7 +7,9 @@ import (
+ 	"net"
+ 	"os"
+ 	"regexp"
++	"signal"
+ 	"strings"
++	"syscall"
+ 	"time"
+ 
+ 	nested "github.com/antonfisher/nested-logrus-formatter"
+@@ -33,12 +35,16 @@ var (
  	appDate    = "Unknown"
  )
  
@@ -274,7 +291,7 @@ index 36ef82c..1da73da 100644
  		rand.Seed(time.Now().UnixNano())
  
  		// log config
-@@ -203,6 +207,38 @@ func init() {
+@@ -203,6 +209,38 @@ func init() {
  	viper.AutomaticEnv()
  }
  
