@@ -255,7 +255,7 @@ index 5d6f60e..11a687a 100644
  import (
  	"crypto/tls"
 diff --git a/app/cmd/main.go b/app/cmd/main.go
-index 36ef82c..bf992a0 100644
+index 36ef82c..3b10aa2 100644
 --- a/app/cmd/main.go
 +++ b/app/cmd/main.go
 @@ -1,4 +1,4 @@
@@ -264,11 +264,12 @@ index 36ef82c..bf992a0 100644
  
  import (
  	"fmt"
-@@ -7,7 +7,9 @@ import (
+@@ -6,8 +6,10 @@ import (
+ 	"math/rand"
  	"net"
  	"os"
++	"os/signal"
  	"regexp"
-+	"signal"
  	"strings"
 +	"syscall"
  	"time"
