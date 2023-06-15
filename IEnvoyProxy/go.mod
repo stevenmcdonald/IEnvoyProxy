@@ -1,6 +1,6 @@
 module IEnvoyProxy
 
-go 1.18
+go 1.19
 
 require (
 	git.torproject.org/pluggable-transports/snowflake.git/v2 v2.0.0-00010101000000-000000000000
@@ -158,7 +158,7 @@ replace (
 	github.com/apernet/hysteria/core => ../hysteria/core
 	github.com/elazarl/goproxy => github.com/apernet/goproxy v0.0.0-20221124043924-155acfaf278f
 	github.com/pion/dtls/v2 v2.1.5 => github.com/xiaokangwang/dtls/v2 v2.0.0-20230118142434-16e5cc8ce01c
-	github.com/pion/webrtc/v3 v3.1.41 => github.com/xiaokangwang/webrtc/v3 v3.0.0-20230118142924-be9162e2b526
+	// github.com/pion/webrtc/v3 v3.1.41 => github.com/xiaokangwang/webrtc/v3 v3.0.0-20230118142924-be9162e2b526
 	github.com/quic-go/quic-go => github.com/apernet/quic-go v0.32.1-0.20230226201325-e07aae1a800b
 	github.com/v2fly/v2ray-core v4.45.2+incompatible => ../v2ray-core
 )
