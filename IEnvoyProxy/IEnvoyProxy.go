@@ -9,7 +9,7 @@ import (
 	"time"
 	"os"
 
-	hysteria "github.com/tobyxdd/hysteria/cmd"
+	hysteria "github.com/apernet/hysteria/app/cmd"
 	v2ray "github.com/v2fly/v2ray-core/envoy"
 	snowflakeclient "git.torproject.org/pluggable-transports/snowflake.git/v2/client"
 )
