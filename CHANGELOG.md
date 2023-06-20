@@ -1,5 +1,8 @@
 # IEnvoyProxy Changlog
 
+## 1.5.0
+ - Bring Lyrebird (forked from obfs4proxy) back(ish) over from IPtProxy
+
 ## 1.4.2
  - Default UTLs to random masquerading by default for snowflake
 

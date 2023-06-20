@@ -50,7 +50,10 @@ printf '\n\n--- Fetching submodule dependencies...\n'
 if test -e ".git"; then
     # There's a .git directory - we must be in the development pod.
     git submodule update --init --recursive
-    cd hysteria || exit 1
+    cd lyrebird || exit 1
+    git reset --hard
+    cp -a . "$TMPDIR/lyrebird"
+    cd ../hysteria || exit 1
     git reset --hard
     cp -a . "$TMPDIR/hysteria"
     cd ../v2ray-core || exit 1
@@ -63,6 +66,9 @@ if test -e ".git"; then
     cd ..
 else
     # No .git directory - That's a normal install.
+    git clone https://gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird.git "$TMPDIR/lyrebird"
+    cd "$TMPDIR/lyrebird" || exit 1
+    git checkout --force --quiet 3915dcd
     git clone https://github.com/HyNetwork/hysteria.git "$TMPDIR/hysteria"
     cd hysteria || exit 1
     git checkout --force --quiet b94f8a1
@@ -80,6 +86,7 @@ fi
 # Apply patches.
 printf '\n\n--- Apply patches to submodules...\n'
 echo `pwd`
+patch --directory=$TMPDIR/lyrebird --strip=1 < lyrebird.patch
 patch --directory=$TMPDIR/hysteria --strip=1 < hysteria.patch
 patch --directory=$TMPDIR/v2ray-core --strip=1 < v2ray-core.patch
 patch --directory=$TMPDIR/snowflake --strip=1 < snowflake.patch

@@ -12,7 +12,50 @@ import (
 	hysteria "github.com/apernet/hysteria/app/cmd"
 	v2ray "github.com/v2fly/v2ray-core/envoy"
 	snowflakeclient "git.torproject.org/pluggable-transports/snowflake.git/v2/client"
+	"gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird/cmd/lyrebird"
 )
+
+
+var meekPort = 47000
+
+// MeekPort - Port where Lyrebird will provide its Meek service.
+// Only use this after calling StartLyrebird! It might have changed after that!
+//
+//goland:noinspection GoUnusedExportedFunction
+func MeekPort() int {
+	return meekPort
+}
+
+var obfs2Port = 47100
+
+// Obfs2Port - Port where Lyrebird will provide its Obfs2 service.
+// Only use this property after calling StartLyrebird! It might have changed after that!
+//
+//goland:noinspection GoUnusedExportedFunction
+func Obfs2Port() int {
+	return obfs2Port
+}
+
+var obfs3Port = 47200
+
+// Obfs3Port - Port where Lyrebird will provide its Obfs3 service.
+// Only use this property after calling StartLyrebird! It might have changed after that!
+//
+//goland:noinspection GoUnusedExportedFunction
+func Obfs3Port() int {
+	return obfs3Port
+}
+
+var obfs4Port = 47300
+
+// Obfs4Port - Port where Lyrebird will provide its Obfs4 service.
+// Only use this property after calling StartLyrebird! It might have changed after that!
+//
+//goland:noinspection GoUnusedExportedFunction
+func Obfs4Port() int {
+	return obfs4Port
+}
+
 
 var hysteriaPort = 47500
 
@@ -50,11 +93,115 @@ func SnowflakePort() int {
 	return snowflakePort
 }
 
+var lyrebirdRunning = false
 var hysteriaRunning = false
 var v2rayWsRunning = false
 var v2raySrtpRunning = false
 var v2rayWechatRunning = false
 var snowflakeRunning = false
+
+// StateLocation - Sets TOR_PT_STATE_LOCATION
+var StateLocation string
+
+
+/// Lyrebird (forked from obfs4proxy)
+
+// LyrebirdLogFile - The log file name used by Lyrebird.
+//
+// The Lyrebird log file can be found at `filepath.Join(StateLocation, LyrebirdLogFile())`.
+//
+//goland:noinspection GoUnusedExportedFunction
+func LyrebirdLogFile() string {
+	return lyrebird.LyrebirdLogFile
+}
+
+// StartLyrebird - Start Lyrebird.
+//
+// This will test, if the default ports are available. If not, it will increment them until there is.
+// Only use the port properties after calling this, they might have been changed!
+//
+// @param logLevel Log level (ERROR/WARN/INFO/DEBUG). Defaults to ERROR if empty string.
+//
+// @param enableLogging Log to TOR_PT_STATE_LOCATION/obfs4proxy.log.
+//
+// @param unsafeLogging Disable the address scrubber.
+//
+// @param proxy HTTP, SOCKS4 or SOCKS5 proxy to be used behind Lyrebird. E.g. "socks5://127.0.0.1:12345"
+//
+// @return Port number where Lyrebird will listen on for Obfs4(!), if no error happens during start up.
+//
+//	If you need the other ports, check MeekPort, Obfs2Port, Obfs3Port and ScramblesuitPort properties!
+//
+//goland:noinspection GoUnusedExportedFunction
+func StartLyrebird(logLevel string, enableLogging, unsafeLogging bool, proxy string) int {
+	if lyrebirdRunning {
+		return obfs4Port
+	}
+
+	lyrebirdRunning = true
+
+	for !IsPortAvailable(meekPort) {
+		meekPort++
+	}
+
+	if meekPort >= obfs2Port {
+		obfs2Port = meekPort + 1
+	}
+
+	for !IsPortAvailable(obfs2Port) {
+		obfs2Port++
+	}
+
+	if obfs2Port >= obfs3Port {
+		obfs3Port = obfs2Port + 1
+	}
+
+	for !IsPortAvailable(obfs3Port) {
+		obfs3Port++
+	}
+
+	if obfs3Port >= obfs4Port {
+		obfs4Port = obfs3Port + 1
+	}
+
+	for !IsPortAvailable(obfs4Port) {
+		obfs4Port++
+	}
+
+	if obfs4Port >= scramblesuitPort {
+		scramblesuitPort = obfs4Port + 1
+	}
+
+	for !IsPortAvailable(scramblesuitPort) {
+		scramblesuitPort++
+	}
+
+	fixEnv()
+
+	if len(proxy) > 0 {
+		_ = os.Setenv("TOR_PT_PROXY", proxy)
+	} else {
+		_ = os.Unsetenv("TOR_PT_PROXY")
+	}
+
+	go lyrebird.Start(&meekPort, &obfs2Port, &obfs3Port, &obfs4Port, &scramblesuitPort, &logLevel, &enableLogging, &unsafeLogging)
+
+	return obfs4Port
+}
+
+// StopLyrebird - Stop Lyrebird.
+//
+//goland:noinspection GoUnusedExportedFunction
+func StopLyrebird() {
+	if !lyrebirdRunning {
+		return
+	}
+
+	go lyrebird.Stop()
+
+	lyrebirdRunning = false
+}
+
 
 /// Hysteria
 
@@ -298,8 +445,47 @@ type SnowflakeClientConnected interface {
 // we only have snowflake for now, and that only needs a couple env
 // vars set.
 func fixEnv() {
-	_ = os.Setenv("TOR_PT_CLIENT_TRANSPORTS", "snowflake")
+	info, err := os.Stat(StateLocation)
+
+	// If dir does not exist, try to create it.
+	if errors.Is(err, os.ErrNotExist) {
+		err = os.MkdirAll(StateLocation, 0700)
+
+		if err == nil {
+			info, err = os.Stat(StateLocation)
+		}
+	}
+
+	// If it is not a dir, panic.
+	if err == nil && !info.IsDir() {
+		err = fs.ErrInvalid
+	}
+
+	// Create a file within dir to test writability.
+	if err == nil {
+		tempFile := StateLocation + "/.ienvoyproxy-writetest"
+		var file *os.File
+		file, err = os.Create(tempFile)
+
+		// Remove the test file again.
+		if err == nil {
+			file.Close()
+
+			err = os.Remove(tempFile)
+		}
+	}
+
+	if err != nil {
+		panic("Error with StateLocation directory \"" + StateLocation + "\":\n" +
+			"  " + err.Error() + "\n" +
+			"  StateLocation needs to be set to a writable directory.\n" +
+			"  Use an app-private directory to avoid information leaks.\n" +
+			"  Use a non-temporary directory to allow reuse of potentially stored state.")
+	}
+
+	_ = os.Setenv("TOR_PT_CLIENT_TRANSPORTS", "meek_lite,obfs4,snowflake")
 	_ = os.Setenv("TOR_PT_MANAGED_TRANSPORT_VER", "1")
+	_ = os.Setenv("TOR_PT_STATE_LOCATION", StateLocation)
 }
 
 

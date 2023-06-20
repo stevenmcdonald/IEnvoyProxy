@@ -3,6 +3,7 @@ module IEnvoyProxy
 go 1.19
 
 require (
+	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird v0.0.0-00010101000000-000000000000
 	git.torproject.org/pluggable-transports/snowflake.git/v2 v2.0.0-00010101000000-000000000000
 	github.com/apernet/hysteria/app v1.3.5
 	github.com/v2fly/v2ray-core v4.45.2+incompatible
@@ -161,4 +162,6 @@ replace (
 	// github.com/pion/webrtc/v3 v3.1.41 => github.com/xiaokangwang/webrtc/v3 v3.0.0-20230118142924-be9162e2b526
 	github.com/quic-go/quic-go => github.com/apernet/quic-go v0.32.1-0.20230226201325-e07aae1a800b
 	github.com/v2fly/v2ray-core v4.45.2+incompatible => ../v2ray-core
+	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird => ../lyrebird
+	github.com/pion/dtls/v2 => github.com/pion/dtls/v2 v2.0.12
 )
