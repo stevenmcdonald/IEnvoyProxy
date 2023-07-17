@@ -1,8 +1,10 @@
 package IEnvoyProxy
 
 import (
-	"fmt"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"io/fs"
 	"log"
 	"net"
 	"strconv"
@@ -27,46 +29,12 @@ func MeekPort() int {
 	return meekPort
 }
 
+// This functionality is disabled, but values are required. Values are ignored
 var obfs2Port = 47100
-
-// Obfs2Port - Port where Lyrebird will provide its Obfs2 service.
-// Only use this property after calling StartLyrebird! It might have changed after that!
-//
-//goland:noinspection GoUnusedExportedFunction
-func Obfs2Port() int {
-	return obfs2Port
-}
-
 var obfs3Port = 47200
+var scramblesuitPort = 47400
 
-// Obfs3Port - Port where Lyrebird will provide its Obfs3 service.
-// Only use this property after calling StartLyrebird! It might have changed after that!
-//
-//goland:noinspection GoUnusedExportedFunction
-func Obfs3Port() int {
-	return obfs3Port
-}
-
-var obfs4Port = 47300
-var obfs4TubesocksPort = 47350
-
-// Obfs4Port - Port where Lyrebird will provide its Obfs4 service.
-// Only use this property after calling StartLyrebird! It might have changed after that!
-//
-//goland:noinspection GoUnusedExportedFunction
-func Obfs4Port() int {
-	return obfs4Port
-}
-
-
-// Obfs4Port - Port where Lyrebird will provide its Obfs4 service.
-// Only use this property after calling StartLyrebird! It might have changed after that!
-//
-//goland:noinspection GoUnusedExportedFunction
-func Obfs4TubesocksPort() int {
-	return obfs4TubesocksPort
-}
-
+// real values:
 var hysteriaPort = 47500
 
 // HysteriaPort - Port where Hysteria will provide its service.
@@ -78,6 +46,7 @@ func HysteriaPort() int {
 }
 
 var obfs4Port = 47300
+var obfs4TubesocksPort = 47350
 
 // Obfs4Port - Port where Lyrebird will provide its Obfs4 service.
 // Only use this property after calling StartLyrebird! It might have changed after that!
@@ -105,8 +74,6 @@ func V2rayWechatPort() int {
 func V2rayWsPort() int {
 	return v2rayWsPort
 }
-
-
 
 // SnowflakePort - Port where Snowflake will provide its service.
 // Only use this property after calling StartSnowflake! It might have changed after that!
@@ -168,18 +135,6 @@ func StartLyrebird(user, password, logLevel string, enableLogging, unsafeLogging
 	obfs4Port = findPort(obfs4Port)
 	obfs4TubesocksPort = findPort(obfs4TubesocksPort)
 
-	for !IsPortAvailable(obfs4Port) {
-		obfs4Port++
-	}
-
-	if obfs4Port >= scramblesuitPort {
-		scramblesuitPort = obfs4Port + 1
-	}
-
-	for !IsPortAvailable(scramblesuitPort) {
-		scramblesuitPort++
-	}
-
 	fixEnv()
 
 	go lyrebird.Start(&meekPort, &obfs2Port, &obfs3Port, &obfs4Port, &scramblesuitPort, &logLevel, &enableLogging, &unsafeLogging)
@@ -193,7 +148,7 @@ func StartLyrebird(user, password, logLevel string, enableLogging, unsafeLogging
 	// info as a parameter to StartLyrebird() for us, but that requires more
 	// invasive changes. Todo maybe?
 
-	obfs4url = "127.0.0.1" + strconv.Itoa(obfs4Port)
+	var obfs4Url = "127.0.0.1" + strconv.Itoa(obfs4Port)
 	go tubesocks.Start(user, password, obfs4Url, obfs4TubesocksPort)
 
 	return obfs4TubesocksPort
