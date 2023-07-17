@@ -13,6 +13,7 @@ import (
 	v2ray "github.com/v2fly/v2ray-core/envoy"
 	snowflakeclient "git.torproject.org/pluggable-transports/snowflake.git/v2/client"
 	"gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird/cmd/lyrebird"
+	"gitlab.com/stevenmcdonald/tubesocks"
 )
 
 
@@ -47,6 +48,7 @@ func Obfs3Port() int {
 }
 
 var obfs4Port = 47300
+var obfs4TubesocksPort = 47350
 
 // Obfs4Port - Port where Lyrebird will provide its Obfs4 service.
 // Only use this property after calling StartLyrebird! It might have changed after that!
@@ -56,6 +58,14 @@ func Obfs4Port() int {
 	return obfs4Port
 }
 
+
+// Obfs4Port - Port where Lyrebird will provide its Obfs4 service.
+// Only use this property after calling StartLyrebird! It might have changed after that!
+//
+//goland:noinspection GoUnusedExportedFunction
+func Obfs4TubesocksPort() int {
+	return obfs4TubesocksPort
+}
 
 var hysteriaPort = 47500
 
@@ -67,6 +77,17 @@ func HysteriaPort() int {
 	return hysteriaPort
 }
 
+var obfs4Port = 47300
+
+// Obfs4Port - Port where Lyrebird will provide its Obfs4 service.
+// Only use this property after calling StartLyrebird! It might have changed after that!
+//
+// XXX This actually returns the port that the tubesocks proxy listens on
+//
+//goland:noinspection GoUnusedExportedFunction
+func Obfs4Port() int {
+	return obfs4TubesocksPort
+}
 
 var v2raySrtpPort = 47600
 var v2rayWechatPort = 47700
@@ -84,6 +105,8 @@ func V2rayWechatPort() int {
 func V2rayWsPort() int {
 	return v2rayWsPort
 }
+
+
 
 // SnowflakePort - Port where Snowflake will provide its service.
 // Only use this property after calling StartSnowflake! It might have changed after that!
@@ -126,43 +149,24 @@ func LyrebirdLogFile() string {
 //
 // @param unsafeLogging Disable the address scrubber.
 //
-// @param proxy HTTP, SOCKS4 or SOCKS5 proxy to be used behind Lyrebird. E.g. "socks5://127.0.0.1:12345"
-//
-// @return Port number where Lyrebird will listen on for Obfs4(!), if no error happens during start up.
+// @return Port number where Tubesocks will listen on for Obfs4(!), if no error happens during start up.
 //
 //	If you need the other ports, check MeekPort, Obfs2Port, Obfs3Port and ScramblesuitPort properties!
 //
 //goland:noinspection GoUnusedExportedFunction
-func StartLyrebird(logLevel string, enableLogging, unsafeLogging bool, proxy string) int {
+func StartLyrebird(user, password, logLevel string, enableLogging, unsafeLogging bool) int {
 	if lyrebirdRunning {
-		return obfs4Port
+		return obfs4TubesocksPort
 	}
 
 	lyrebirdRunning = true
 
-	for !IsPortAvailable(meekPort) {
-		meekPort++
-	}
+	// we disable everything but obfs4 and meek_lite in TOR_PT_CLIENT_TRANSPORTS
+	// so their settings are ignored
 
-	if meekPort >= obfs2Port {
-		obfs2Port = meekPort + 1
-	}
-
-	for !IsPortAvailable(obfs2Port) {
-		obfs2Port++
-	}
-
-	if obfs2Port >= obfs3Port {
-		obfs3Port = obfs2Port + 1
-	}
-
-	for !IsPortAvailable(obfs3Port) {
-		obfs3Port++
-	}
-
-	if obfs3Port >= obfs4Port {
-		obfs4Port = obfs3Port + 1
-	}
+	meekPort = findPort(meekPort)
+	obfs4Port = findPort(obfs4Port)
+	obfs4TubesocksPort = findPort(obfs4TubesocksPort)
 
 	for !IsPortAvailable(obfs4Port) {
 		obfs4Port++
@@ -178,15 +182,21 @@ func StartLyrebird(logLevel string, enableLogging, unsafeLogging bool, proxy str
 
 	fixEnv()
 
-	if len(proxy) > 0 {
-		_ = os.Setenv("TOR_PT_PROXY", proxy)
-	} else {
-		_ = os.Unsetenv("TOR_PT_PROXY")
-	}
-
 	go lyrebird.Start(&meekPort, &obfs2Port, &obfs3Port, &obfs4Port, &scramblesuitPort, &logLevel, &enableLogging, &unsafeLogging)
 
-	return obfs4Port
+	////////
+	// XXX
+	// This is probably not the ideal way to do things, but it's expedient.
+	// We've been unable to configure cronet to use a socks proxy that requires
+	// auth info, tubesocks bridges that gap by running a second socks proxy.
+	// It would probably be better to patch the Lyrebird code to take the auth
+	// info as a parameter to StartLyrebird() for us, but that requires more
+	// invasive changes. Todo maybe?
+
+	obfs4url = "127.0.0.1" + strconv.Itoa(obfs4Port)
+	go tubesocks.Start(user, password, obfs4Url, obfs4TubesocksPort)
+
+	return obfs4TubesocksPort
 }
 
 // StopLyrebird - Stop Lyrebird.
