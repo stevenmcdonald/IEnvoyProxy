@@ -148,7 +148,7 @@ func StartLyrebird(user, password, logLevel string, enableLogging, unsafeLogging
 	// info as a parameter to StartLyrebird() for us, but that requires more
 	// invasive changes. Todo maybe?
 
-	var obfs4Url = "127.0.0.1" + strconv.Itoa(obfs4Port)
+	var obfs4Url = "127.0.0.1:" + strconv.Itoa(obfs4Port)
 	go tubesocks.Start(user, password, obfs4Url, obfs4TubesocksPort)
 
 	return obfs4TubesocksPort
