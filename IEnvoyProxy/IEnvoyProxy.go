@@ -410,21 +410,8 @@ type SnowflakeClientConnected interface {
 // we only have snowflake for now, and that only needs a couple env
 // vars set.
 func fixEnv() {
-	info, err := os.Stat(StateLocation)
-
-	// If dir does not exist, try to create it.
-	if errors.Is(err, os.ErrNotExist) {
-		err = os.MkdirAll(StateLocation, 0700)
-
-		if err == nil {
-			info, err = os.Stat(StateLocation)
-		}
-	}
-
-	// If it is not a dir, panic.
-	if err == nil && !info.IsDir() {
-		err = fs.ErrInvalid
-	}
+	var err
+	StateLocation, err = os.MkdirTemp("", "pt_state-*")
 
 	// Create a file within dir to test writability.
 	if err == nil {
