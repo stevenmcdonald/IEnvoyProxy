@@ -2,9 +2,7 @@ package IEnvoyProxy
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io/fs"
 	"log"
 	"net"
 	"strconv"
@@ -410,11 +408,11 @@ type SnowflakeClientConnected interface {
 // we only have snowflake for now, and that only needs a couple env
 // vars set.
 func fixEnv() {
-	var err
-	StateLocation, err = os.MkdirTemp("", "pt_state-*")
+	tempDir, err := os.MkdirTemp("", "pt_state-*")
 
 	// Create a file within dir to test writability.
 	if err == nil {
+		StateLocation = tempDir
 		tempFile := StateLocation + "/.ienvoyproxy-writetest"
 		var file *os.File
 		file, err = os.Create(tempFile)
