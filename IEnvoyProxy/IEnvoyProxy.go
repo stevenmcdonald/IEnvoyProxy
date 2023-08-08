@@ -161,6 +161,8 @@ func StartObfs4(user, password, logLevel string, enableLogging, unsafeLogging bo
 	var obfs4Url = "127.0.0.1:" + strconv.Itoa(obfs4Port)
 
 	go tubesocks.Start(user, password, obfs4Url, obfs4TubesocksPort)
+
+	return obfs4TubesocksPort
 }
 
 func StartMeek(user, password, logLevel string, enableLogging, unsafeLogging bool) int {
