@@ -45,6 +45,7 @@ func HysteriaPort() int {
 
 var obfs4Port = 47300
 var obfs4TubesocksPort = 47350
+var meekTubeSocksPort = 47360
 
 // Obfs4Port - Port where Lyrebird will provide its Obfs4 service.
 // Only use this property after calling StartLyrebird! It might have changed after that!
@@ -82,6 +83,8 @@ func SnowflakePort() int {
 }
 
 var lyrebirdRunning = false
+var meekRunning = false
+var obfs4Running = false
 var hysteriaRunning = false
 var v2rayWsRunning = false
 var v2raySrtpRunning = false
@@ -119,7 +122,7 @@ func LyrebirdLogFile() string {
 //	If you need the other ports, check MeekPort, Obfs2Port, Obfs3Port and ScramblesuitPort properties!
 //
 //goland:noinspection GoUnusedExportedFunction
-func StartLyrebird(user, password, logLevel string, enableLogging, unsafeLogging bool) int {
+func StartLyrebird(logLevel string, enableLogging, unsafeLogging bool) int {
 	if lyrebirdRunning {
 		return obfs4TubesocksPort
 	}
@@ -131,25 +134,46 @@ func StartLyrebird(user, password, logLevel string, enableLogging, unsafeLogging
 
 	meekPort = findPort(meekPort)
 	obfs4Port = findPort(obfs4Port)
-	obfs4TubesocksPort = findPort(obfs4TubesocksPort)
 
 	fixEnv()
 
 	go lyrebird.Start(&meekPort, &obfs2Port, &obfs3Port, &obfs4Port, &scramblesuitPort, &logLevel, &enableLogging, &unsafeLogging)
 
-	////////
-	// XXX
-	// This is probably not the ideal way to do things, but it's expedient.
-	// We've been unable to configure cronet to use a socks proxy that requires
-	// auth info, tubesocks bridges that gap by running a second socks proxy.
-	// It would probably be better to patch the Lyrebird code to take the auth
-	// info as a parameter to StartLyrebird() for us, but that requires more
-	// invasive changes. Todo maybe?
+	// return obfs4TubesocksPort
+	return obfs4Port
+}
 
+////////
+// XXX
+// This is probably not the ideal way to do things, but it's expedient.
+// We've been unable to configure cronet to use a socks proxy that requires
+// auth info, tubesocks bridges that gap by running a second socks proxy.
+// It would probably be better to patch the Lyrebird code to take the auth
+// info as a parameter to StartObfs4/StartMeek() for us, but that requires more
+// invasive changes. Todo maybe?
+
+func StartObfs4(user, password, logLevel string, enableLogging, unsafeLogging bool) int {
+	if (!lyrebirdRunning) {
+		StartLyrebird(logLevel, enableLogging, unsafeLogging)
+	}
+
+	obfs4TubesocksPort = findPort(obfs4TubesocksPort)
 	var obfs4Url = "127.0.0.1:" + strconv.Itoa(obfs4Port)
-	go tubesocks.Start(user, password, obfs4Url, obfs4TubesocksPort)
 
-	return obfs4TubesocksPort
+	go tubesocks.Start(user, password, obfs4Url, obfs4TubesocksPort)
+}
+
+func StartMeek(user, password, logLevel string, enableLogging, unsafeLogging bool) int {
+	if (!lyrebirdRunning) {
+		StartLyrebird(logLevel, enableLogging, unsafeLogging)
+	}
+
+	meekTubeSocksPort = findPort(meekTubeSocksPort)
+	var meekUrl = "127.0.0.1:" + strconv.Itoa(meekPort)
+
+	go tubesocks.Start(user, password, meekUrl, meekTubeSocksPort)
+
+	return meekTubeSocksPort
 }
 
 // StopLyrebird - Stop Lyrebird.
