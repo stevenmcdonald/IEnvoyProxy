@@ -430,16 +430,35 @@ type SnowflakeClientConnected interface {
 ///////////////////
 // Helper functions
 
-// in IPtProxy, this handles the PT state directoy stuff...
-// we only have snowflake for now, and that only needs a couple env
-// vars set.
+// Hack: Set some environment variables that are either
+// required, or values that we want. Have to do this here, since we can only
+// launch this in a thread and the manipulation of environment variables
+// from within an iOS app won't end up in goptlib properly.
+//
+// Note: This might be called multiple times when using different functions here,
+// but that doesn't necessarily mean, that the values set are independent each
+// time this is called. It's still the ENVIRONMENT, we're changing here, so there might
+// be race conditions.
 func fixEnv() {
-	tempDir, err := os.MkdirTemp("", "pt_state-*")
+	info, err := os.Stat(StateLocation)
+
+	// If dir does not exist, try to create it.
+	if errors.Is(err, os.ErrNotExist) {
+		err = os.MkdirAll(StateLocation, 0700)
+
+		if err == nil {
+			info, err = os.Stat(StateLocation)
+		}
+	}
+
+	// If it is not a dir, panic.
+	if err == nil && !info.IsDir() {
+		err = fs.ErrInvalid
+	}
 
 	// Create a file within dir to test writability.
 	if err == nil {
-		StateLocation = tempDir
-		tempFile := StateLocation + "/.ienvoyproxy-writetest"
+		tempFile := StateLocation + "/.iptproxy-writetest"
 		var file *os.File
 		file, err = os.Create(tempFile)
 
