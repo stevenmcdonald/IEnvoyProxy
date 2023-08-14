@@ -1,8 +1,10 @@
 package IEnvoyProxy
 
 import (
-	"fmt"
+	"errors"
 	"encoding/json"
+	"fmt"
+	"io/fs"
 	"log"
 	"net"
 	"strconv"
@@ -12,8 +14,27 @@ import (
 	hysteria "github.com/apernet/hysteria/app/cmd"
 	v2ray "github.com/v2fly/v2ray-core/envoy"
 	snowflakeclient "git.torproject.org/pluggable-transports/snowflake.git/v2/client"
+	"gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird/cmd/lyrebird"
+	"gitlab.com/stevenmcdonald/tubesocks"
 )
 
+
+var meekPort = 47000
+
+// MeekPort - Port where Lyrebird will provide its Meek service.
+// Only use this after calling StartLyrebird! It might have changed after that!
+//
+//goland:noinspection GoUnusedExportedFunction
+func MeekPort() int {
+	return meekPort
+}
+
+// This functionality is disabled, but values are required. Values are ignored
+var obfs2Port = 47100
+var obfs3Port = 47200
+var scramblesuitPort = 47400
+
+// real values:
 var hysteriaPort = 47500
 
 // HysteriaPort - Port where Hysteria will provide its service.
@@ -24,6 +45,19 @@ func HysteriaPort() int {
 	return hysteriaPort
 }
 
+var obfs4Port = 47300
+var obfs4TubesocksPort = 47350
+var meekTubeSocksPort = 47360
+
+// Obfs4Port - Port where Lyrebird will provide its Obfs4 service.
+// Only use this property after calling StartLyrebird! It might have changed after that!
+//
+// XXX This actually returns the port that the tubesocks proxy listens on
+//
+//goland:noinspection GoUnusedExportedFunction
+func Obfs4Port() int {
+	return obfs4TubesocksPort
+}
 
 var v2raySrtpPort = 47600
 var v2rayWechatPort = 47700
@@ -50,11 +84,115 @@ func SnowflakePort() int {
 	return snowflakePort
 }
 
+var lyrebirdRunning = false
+var meekRunning = false
+var obfs4Running = false
 var hysteriaRunning = false
 var v2rayWsRunning = false
 var v2raySrtpRunning = false
 var v2rayWechatRunning = false
 var snowflakeRunning = false
+
+// StateLocation - Sets TOR_PT_STATE_LOCATION
+var StateLocation string
+
+
+/// Lyrebird (forked from obfs4proxy)
+
+// LyrebirdLogFile - The log file name used by Lyrebird.
+//
+// The Lyrebird log file can be found at `filepath.Join(StateLocation, LyrebirdLogFile())`.
+//
+//goland:noinspection GoUnusedExportedFunction
+func LyrebirdLogFile() string {
+	return lyrebird.LyrebirdLogFile
+}
+
+// StartLyrebird - Start Lyrebird.
+//
+// This will test, if the default ports are available. If not, it will increment them until there is.
+// Only use the port properties after calling this, they might have been changed!
+//
+// @param logLevel Log level (ERROR/WARN/INFO/DEBUG). Defaults to ERROR if empty string.
+//
+// @param enableLogging Log to TOR_PT_STATE_LOCATION/obfs4proxy.log.
+//
+// @param unsafeLogging Disable the address scrubber.
+//
+// @return Port number where Tubesocks will listen on for Obfs4(!), if no error happens during start up.
+//
+//	If you need the other ports, check MeekPort, Obfs2Port, Obfs3Port and ScramblesuitPort properties!
+//
+//goland:noinspection GoUnusedExportedFunction
+func StartLyrebird(logLevel string, enableLogging, unsafeLogging bool) int {
+	if lyrebirdRunning {
+		return obfs4TubesocksPort
+	}
+
+	lyrebirdRunning = true
+
+	// we disable everything but obfs4 and meek_lite in TOR_PT_CLIENT_TRANSPORTS
+	// so their settings are ignored
+
+	meekPort = findPort(meekPort)
+	obfs4Port = findPort(obfs4Port)
+
+	fixEnv()
+
+	go lyrebird.Start(&meekPort, &obfs2Port, &obfs3Port, &obfs4Port, &scramblesuitPort, &logLevel, &enableLogging, &unsafeLogging)
+
+	// return obfs4TubesocksPort
+	return obfs4Port
+}
+
+////////
+// XXX
+// This is probably not the ideal way to do things, but it's expedient.
+// We've been unable to configure cronet to use a socks proxy that requires
+// auth info, tubesocks bridges that gap by running a second socks proxy.
+// It would probably be better to patch the Lyrebird code to take the auth
+// info as a parameter to StartObfs4/StartMeek() for us, but that requires more
+// invasive changes. Todo maybe?
+
+func StartObfs4(user, password, logLevel string, enableLogging, unsafeLogging bool) int {
+	if (!lyrebirdRunning) {
+		StartLyrebird(logLevel, enableLogging, unsafeLogging)
+	}
+
+	obfs4TubesocksPort = findPort(obfs4TubesocksPort)
+	var obfs4Url = "127.0.0.1:" + strconv.Itoa(obfs4Port)
+
+	go tubesocks.Start(user, password, obfs4Url, obfs4TubesocksPort)
+
+	return obfs4TubesocksPort
+}
+
+func StartMeek(user, password, logLevel string, enableLogging, unsafeLogging bool) int {
+	if (!lyrebirdRunning) {
+		StartLyrebird(logLevel, enableLogging, unsafeLogging)
+	}
+
+	meekTubeSocksPort = findPort(meekTubeSocksPort)
+	var meekUrl = "127.0.0.1:" + strconv.Itoa(meekPort)
+
+	go tubesocks.Start(user, password, meekUrl, meekTubeSocksPort)
+
+	return meekTubeSocksPort
+}
+
+// StopLyrebird - Stop Lyrebird.
+//
+//goland:noinspection GoUnusedExportedFunction
+func StopLyrebird() {
+	if !lyrebirdRunning {
+		return
+	}
+
+	go lyrebird.Stop()
+
+	lyrebirdRunning = false
+}
+
 
 /// Hysteria
 
@@ -294,12 +432,57 @@ type SnowflakeClientConnected interface {
 ///////////////////
 // Helper functions
 
-// in IPtProxy, this handles the PT state directoy stuff...
-// we only have snowflake for now, and that only needs a couple env
-// vars set.
+// Hack: Set some environment variables that are either
+// required, or values that we want. Have to do this here, since we can only
+// launch this in a thread and the manipulation of environment variables
+// from within an iOS app won't end up in goptlib properly.
+//
+// Note: This might be called multiple times when using different functions here,
+// but that doesn't necessarily mean, that the values set are independent each
+// time this is called. It's still the ENVIRONMENT, we're changing here, so there might
+// be race conditions.
 func fixEnv() {
-	_ = os.Setenv("TOR_PT_CLIENT_TRANSPORTS", "snowflake")
+	info, err := os.Stat(StateLocation)
+
+	// If dir does not exist, try to create it.
+	if errors.Is(err, os.ErrNotExist) {
+		err = os.MkdirAll(StateLocation, 0700)
+
+		if err == nil {
+			info, err = os.Stat(StateLocation)
+		}
+	}
+
+	// If it is not a dir, panic.
+	if err == nil && !info.IsDir() {
+		err = fs.ErrInvalid
+	}
+
+	// Create a file within dir to test writability.
+	if err == nil {
+		tempFile := StateLocation + "/.iptproxy-writetest"
+		var file *os.File
+		file, err = os.Create(tempFile)
+
+		// Remove the test file again.
+		if err == nil {
+			file.Close()
+
+			err = os.Remove(tempFile)
+		}
+	}
+
+	if err != nil {
+		panic("Error with StateLocation directory \"" + StateLocation + "\":\n" +
+			"  " + err.Error() + "\n" +
+			"  StateLocation needs to be set to a writable directory.\n" +
+			"  Use an app-private directory to avoid information leaks.\n" +
+			"  Use a non-temporary directory to allow reuse of potentially stored state.")
+	}
+
+	_ = os.Setenv("TOR_PT_CLIENT_TRANSPORTS", "meek_lite,obfs4,snowflake")
 	_ = os.Setenv("TOR_PT_MANAGED_TRANSPORT_VER", "1")
+	_ = os.Setenv("TOR_PT_STATE_LOCATION", StateLocation)
 }
 
 

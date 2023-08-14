@@ -1,0 +1,187 @@
+diff --git a/cmd/lyrebird/lyrebird.go b/cmd/lyrebird/lyrebird.go
+index ee50b14..3b0eb32 100644
+--- a/cmd/lyrebird/lyrebird.go
++++ b/cmd/lyrebird/lyrebird.go
+@@ -27,10 +27,9 @@
+ 
+ // Go language Tor Pluggable Transport suite.  Works only as a managed
+ // client/server.
+-package main
++package lyrebird
+ 
+ import (
+-	"flag"
+ 	"fmt"
+ 	"io"
+ 	golog "log"
+@@ -38,6 +37,7 @@ import (
+ 	"net/url"
+ 	"os"
+ 	"path"
++	"strconv"
+ 	"sync"
+ 	"syscall"
+ 
+@@ -53,12 +53,14 @@ const (
+ 	obfs4proxyVersion = "0.0.14"
+ 	obfs4proxyLogFile = "obfs4proxy.log"
+ 	socksAddr         = "127.0.0.1:0"
++	LyrebirdVersion   = obfs4proxyVersion
++	LyrebirdLogFile   = obfs4proxyLogFile
+ )
+ 
+ var stateDir string
+ var termMon *termMonitor
+ 
+-func clientSetup() (launched bool, listeners []net.Listener) {
++func clientSetup(meekPort, obfs2Port, obfs3Port, obfs4Port, scramblesuitPort *int) (launched bool, listeners []net.Listener) {
+ 	ptClientInfo, err := pt.ClientSetup(transports.Transports())
+ 	if err != nil {
+ 		golog.Fatal(err)
+@@ -85,7 +87,20 @@ func clientSetup() (launched bool, listeners []net.Listener) {
+ 			continue
+ 		}
+ 
+-		ln, err := net.Listen("tcp", socksAddr)
++		realSocksAddr := socksAddr
++		if name == "obfs4" {
++			realSocksAddr = net.JoinHostPort("127.0.0.1", strconv.Itoa(*obfs4Port))
++		} else if name == "meek_lite" {
++			realSocksAddr = net.JoinHostPort("127.0.0.1", strconv.Itoa(*meekPort))
++		} else if name == "obfs2" {
++			realSocksAddr = net.JoinHostPort("127.0.0.1", strconv.Itoa(*obfs2Port))
++		} else if name == "obfs3" {
++			realSocksAddr = net.JoinHostPort("127.0.0.1", strconv.Itoa(*obfs3Port))
++		} else if name == "scramblesuit" {
++			realSocksAddr = net.JoinHostPort("127.0.0.1", strconv.Itoa(*scramblesuitPort))
++		}
++
++		ln, err := net.Listen("tcp", realSocksAddr)
+ 		if err != nil {
+ 			_ = pt.CmethodError(name, err.Error())
+ 			continue
+@@ -304,22 +319,16 @@ func getVersion() string {
+ 	return fmt.Sprintf("obfs4proxy-%s", obfs4proxyVersion)
+ }
+ 
+-func main() {
++func Start(meekPort, obfs2Port, obfs3Port, obfs4Port, scramblesuitPort *int, logLevelStr *string, enableLogging *bool, unsafeLogging *bool) {
+ 	// Initialize the termination state monitor as soon as possible.
+ 	termMon = newTermMonitor()
+ 
+-	// Handle the command line arguments.
+-	_, execName := path.Split(os.Args[0])
+-	showVer := flag.Bool("version", false, "Print version and exit")
+-	logLevelStr := flag.String("logLevel", "ERROR", "Log level (ERROR/WARN/INFO/DEBUG)")
+-	enableLogging := flag.Bool("enableLogging", false, "Log to TOR_PT_STATE_LOCATION/"+obfs4proxyLogFile)
+-	unsafeLogging := flag.Bool("unsafeLogging", false, "Disable the address scrubber")
+-	flag.Parse()
+-
+-	if *showVer {
+-		fmt.Printf("%s\n", getVersion())
+-		os.Exit(0)
++	if *logLevelStr == "" {
++		*logLevelStr = "ERROR"
+ 	}
++
++	execName := "lyrebird"
++
+ 	if err := log.SetLogLevel(*logLevelStr); err != nil {
+ 		golog.Fatalf("[ERROR]: %s - failed to set log level: %s", execName, err)
+ 	}
+@@ -338,8 +347,7 @@ func main() {
+ 		golog.Fatalf("[ERROR]: %s - failed to initialize logging", execName)
+ 	}
+ 	if err = transports.Init(); err != nil {
+-		log.Errorf("%s - failed to initialize transports: %s", execName, err)
+-		os.Exit(-1)
++		log.Noticef("%s - failed to initialize transports: %s", execName, err)
+ 	}
+ 
+ 	log.Noticef("%s - launched", getVersion())
+@@ -347,7 +355,7 @@ func main() {
+ 	// Do the managed pluggable transport protocol configuration.
+ 	if isClient {
+ 		log.Infof("%s - initializing client transport listeners", execName)
+-		launched, ptListeners = clientSetup()
++		launched, ptListeners = clientSetup(meekPort, obfs2Port, obfs3Port, obfs4Port, scramblesuitPort)
+ 	} else {
+ 		log.Infof("%s - initializing server transport listeners", execName)
+ 		launched, ptListeners = serverSetup()
+@@ -379,3 +387,11 @@ func main() {
+ 	}
+ 	termMon.wait(true)
+ }
++
++func Stop() {
++	log.Noticef("obfs4 Stop: synthesizing SIGINT and SIGTERM")
++
++	termMon.sigChan <- syscall.SIGINT
++
++	termMon.sigChan <- syscall.SIGTERM
++}
+diff --git a/cmd/lyrebird/proxy_http.go b/cmd/lyrebird/proxy_http.go
+index 1adadf8..3bd6952 100644
+--- a/cmd/lyrebird/proxy_http.go
++++ b/cmd/lyrebird/proxy_http.go
+@@ -25,7 +25,7 @@
+  * POSSIBILITY OF SUCH DAMAGE.
+  */
+ 
+-package main
++package lyrebird
+ 
+ import (
+ 	"bufio"
+diff --git a/cmd/lyrebird/proxy_socks4.go b/cmd/lyrebird/proxy_socks4.go
+index ac8be9e..cda8d94 100644
+--- a/cmd/lyrebird/proxy_socks4.go
++++ b/cmd/lyrebird/proxy_socks4.go
+@@ -31,7 +31,7 @@
+  * license that can be found in the LICENSE file.
+  */
+ 
+-package main
++package lyrebird
+ 
+ import (
+ 	"errors"
+diff --git a/cmd/lyrebird/pt_extras.go b/cmd/lyrebird/pt_extras.go
+index 6c2cca5..e3c5c90 100644
+--- a/cmd/lyrebird/pt_extras.go
++++ b/cmd/lyrebird/pt_extras.go
+@@ -25,7 +25,7 @@
+  * POSSIBILITY OF SUCH DAMAGE.
+  */
+ 
+-package main
++package lyrebird
+ 
+ import (
+ 	"errors"
+diff --git a/cmd/lyrebird/termmon.go b/cmd/lyrebird/termmon.go
+index 42c2f84..93794bb 100644
+--- a/cmd/lyrebird/termmon.go
++++ b/cmd/lyrebird/termmon.go
+@@ -25,7 +25,7 @@
+  * POSSIBILITY OF SUCH DAMAGE.
+  */
+ 
+-package main
++package lyrebird
+ 
+ import (
+ 	"io"
+diff --git a/cmd/lyrebird/termmon_linux.go b/cmd/lyrebird/termmon_linux.go
+index 926e630..0c872cb 100644
+--- a/cmd/lyrebird/termmon_linux.go
++++ b/cmd/lyrebird/termmon_linux.go
+@@ -25,7 +25,7 @@
+  * POSSIBILITY OF SUCH DAMAGE.
+  */
+ 
+-package main
++package lyrebird
+ 
+ import (
+ 	"fmt"
