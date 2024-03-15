@@ -1,23 +1,22 @@
 package IEnvoyProxy
 
 import (
-	"errors"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/fs"
 	"log"
 	"net"
+	"os"
 	"strconv"
 	"time"
-	"os"
 
 	hysteria "github.com/apernet/hysteria/app/cmd"
 	v2ray "github.com/v2fly/v2ray-core/envoy"
-	snowflakeclient "git.torproject.org/pluggable-transports/snowflake.git/v2/client"
-	"gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird/cmd/lyrebird"
 	"gitlab.com/stevenmcdonald/tubesocks"
+	"gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird/cmd/lyrebird"
+	snowflakeclient "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/v2/client"
 )
-
 
 var meekPort = 47000
 
@@ -96,7 +95,6 @@ var snowflakeRunning = false
 // StateLocation - Sets TOR_PT_STATE_LOCATION
 var StateLocation string
 
-
 /// Lyrebird (forked from obfs4proxy)
 
 // LyrebirdLogFile - The log file name used by Lyrebird.
@@ -155,7 +153,7 @@ func StartLyrebird(logLevel string, enableLogging, unsafeLogging bool) int {
 // invasive changes. Todo maybe?
 
 func StartObfs4(user, password, logLevel string, enableLogging, unsafeLogging bool) int {
-	if (!lyrebirdRunning) {
+	if !lyrebirdRunning {
 		StartLyrebird(logLevel, enableLogging, unsafeLogging)
 	}
 
@@ -168,7 +166,7 @@ func StartObfs4(user, password, logLevel string, enableLogging, unsafeLogging bo
 }
 
 func StartMeek(user, password, logLevel string, enableLogging, unsafeLogging bool) int {
-	if (!lyrebirdRunning) {
+	if !lyrebirdRunning {
 		StartLyrebird(logLevel, enableLogging, unsafeLogging)
 	}
 
@@ -193,7 +191,6 @@ func StopLyrebird() {
 	lyrebirdRunning = false
 }
 
-
 /// Hysteria
 
 type HysteriaListen struct {
@@ -201,14 +198,14 @@ type HysteriaListen struct {
 }
 
 type HysteriaConfig struct {
-	Server		string			`json:"server"`
-	Protocol	string			`json:"protocol"`
-	Obfs		string			`json:"obfs"`
-	Socks5		HysteriaListen	`json:"socks5"`
-	Up_mbps		int				`json:"up_mbps"`
-	Down_mbps	int				`json:"down_mbps"`
-	Ca			string			`json:"ca"`
-	Alpn		string			`json:"alpn"`
+	Server    string         `json:"server"`
+	Protocol  string         `json:"protocol"`
+	Obfs      string         `json:"obfs"`
+	Socks5    HysteriaListen `json:"socks5"`
+	Up_mbps   int            `json:"up_mbps"`
+	Down_mbps int            `json:"down_mbps"`
+	Ca        string         `json:"ca"`
+	Alpn      string         `json:"alpn"`
 }
 
 // StartHysteria -- Start the Hysteria client
@@ -371,11 +368,17 @@ func StopV2RayWechat() {
 //
 // @param url URL of signaling broker.
 //
-// @param front Front domain.
+// @param fronts Comma-separated list of front domains.
 //
 // @param ampCache OPTIONAL. URL of AMP cache to use as a proxy for signaling.
 //
 //	Only needed when you want to do the rendezvous over AMP instead of a domain fronted server.
+//
+// @param sqsQueueURL OPTIONAL. URL of SQS Queue to use as a proxy for signaling.
+//
+// @param sqsAccessKeyId OPTIONAL. Access Key ID for credentials to access SQS Queue.
+//
+// @param sqsSecretKey OPTIONAL. Secret Key for credentials to access SQS Queue.
 //
 // @param logFile Name of log file. OPTIONAL. Defaults to no log.
 //
@@ -390,7 +393,10 @@ func StopV2RayWechat() {
 // @return Port number where Snowflake will listen on, if no error happens during start up.
 //
 //goland:noinspection GoUnusedExportedFunction
-func StartSnowflake(ice, url, front, ampCache, logFile string, logToStateDir, keepLocalAddresses, unsafeLogging bool, maxPeers int) int {
+func StartSnowflake(ice, url, fronts, ampCache, sqsQueueURL, sqsAccessKeyId, sqsSecretKey, logFile string,
+	logToStateDir, keepLocalAddresses, unsafeLogging bool,
+	maxPeers int) int {
+
 	if snowflakeRunning {
 		return snowflakePort
 	}
@@ -403,7 +409,8 @@ func StartSnowflake(ice, url, front, ampCache, logFile string, logToStateDir, ke
 
 	fixEnv()
 
-	go snowflakeclient.Start(&snowflakePort, &ice, &url, &front, &ampCache, &logFile, &logToStateDir, &keepLocalAddresses, &unsafeLogging, &maxPeers)
+	go snowflakeclient.Start(&snowflakePort, &ice, &url, &fronts, &ampCache, &sqsQueueURL, &sqsAccessKeyId, &sqsSecretKey,
+		&logFile, &logToStateDir, &keepLocalAddresses, &unsafeLogging, &maxPeers)
 
 	return snowflakePort
 }
@@ -427,7 +434,6 @@ type SnowflakeClientConnected interface {
 	// Connected - callback method to handle snowflake proxy client connections.
 	Connected()
 }
-
 
 ///////////////////
 // Helper functions
@@ -484,7 +490,6 @@ func fixEnv() {
 	_ = os.Setenv("TOR_PT_MANAGED_TRANSPORT_VER", "1")
 	_ = os.Setenv("TOR_PT_STATE_LOCATION", StateLocation)
 }
-
 
 func findPort(port int) int {
 	temp := port
