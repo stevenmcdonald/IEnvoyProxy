@@ -4,12 +4,11 @@ This is a fork of IPtProxy (https://github.com/tladesignz/IPtProxy) modified to 
 
 currently this includes:
 
-* [Hysteria](https://github.com/HyNetwork/hysteria)
 * [V2ray](https://github.com/v2fly/v2ray-core)
+* [obfs4proxy](https://github.com/Yawning/obfs4)
 
 We have previously supported (available in git history):
 
-* [obfs4proxy](https://github.com/Yawning/obfs4)
 * [DNSTT](https://www.bamsoftware.com/software/dnstt/)
 
 

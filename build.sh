@@ -53,9 +53,6 @@ if test -e ".git"; then
     cd lyrebird || exit 1
     git reset --hard
     cp -a . "$TMPDIR/lyrebird"
-    cd ../hysteria || exit 1
-    git reset --hard
-    cp -a . "$TMPDIR/hysteria"
     cd ../v2ray-core || exit 1
     git reset --hard
     git clean -fd # we add a file
@@ -69,14 +66,9 @@ else
     git clone https://gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird.git "$TMPDIR/lyrebird"
     cd "$TMPDIR/lyrebird" || exit 1
     git checkout --force --quiet 3915dcd
-    git clone https://github.com/HyNetwork/hysteria.git "$TMPDIR/hysteria"
-    cd hysteria || exit 1
-    git checkout --force --quiet b94f8a1
-    cd ..
     git clone https://github.com/v2fly/v2ray-core.git "$TMPDIR/v2ray-core"
-    cd v2ray-core || exit 1
+    cd "$TMPDIR/v2ray-core" || exit 1
     git checkout --force --quiet 9b526285
-    cd ..
     git clone https://gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake.git "$TMPDIR/snowflake"
     cd "$TMPDIR/snowflake" || exit 1
     git checkout --force --quiet b130151
@@ -87,7 +79,6 @@ fi
 printf '\n\n--- Apply patches to submodules...\n'
 echo `pwd`
 patch --directory="$TMPDIR/lyrebird" --strip=1 < lyrebird.patch
-patch --directory="$TMPDIR/hysteria" --strip=1 < hysteria.patch
 patch --directory="$TMPDIR/v2ray-core" --strip=1 < v2ray-core.patch
 patch --directory="$TMPDIR/snowflake" --strip=1 < snowflake.patch
 
