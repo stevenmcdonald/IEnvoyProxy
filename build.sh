@@ -68,7 +68,7 @@ else
     git checkout --force --quiet 3915dcd
     git clone https://github.com/v2fly/v2ray-core.git "$TMPDIR/v2ray-core"
     cd "$TMPDIR/v2ray-core" || exit 1
-    git checkout --force --quiet 9b526285
+    git checkout --force --quiet 49b50686
     git clone https://gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake.git "$TMPDIR/snowflake"
     cd "$TMPDIR/snowflake" || exit 1
     git checkout --force --quiet b130151

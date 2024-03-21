@@ -9,7 +9,7 @@
   <version>1.4.1</version>
   <name>IEnvoyProxy</name>
   <description>This is a fork of IPtProxy (https://github.com/tladesignz/IPtProxy) modified to include Go projects used by Envoy (https://github.com/greatfire/envoy)
-currently this includes: obfs4proxy, snowflake, v2ray</description>
+currently this includes: Lyrebird, Snowflake, v2ray</description>
   <url>https://greatfire.org</url>
   <licenses>
     <license>

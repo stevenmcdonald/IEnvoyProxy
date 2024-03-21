@@ -4,12 +4,15 @@ This is a fork of IPtProxy (https://github.com/tladesignz/IPtProxy) modified to 
 
 currently this includes:
 
+* Lyrebird(https://gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird)
+* Snowflake(https://gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake)
 * [V2ray](https://github.com/v2fly/v2ray-core)
-* [obfs4proxy](https://github.com/Yawning/obfs4)
 
 We have previously supported (available in git history):
 
+* [obfs4proxy](https://github.com/Yawning/obfs4)
 * [DNSTT](https://www.bamsoftware.com/software/dnstt/)
+* [Hysteria](https://github.com/HyNetwork/hysteria)
 
 
 While this library was made for use with Envoy, it does not depend on Envoy, and may be useful for other situations. Some of the choices made are specific to our needs, but if others want to use this, we can look in to making it more flexible.
