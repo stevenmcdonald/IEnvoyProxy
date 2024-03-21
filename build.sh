@@ -19,7 +19,7 @@ set -u
 
 # echo "TMPDIR: ${TMPDIR}"
 
-if test "${1:ios}" = "android"; then
+if test "${1:-ios}" = "android"; then
   TARGET=android
   OUTPUT=IEnvoyProxy.aar
 fi
