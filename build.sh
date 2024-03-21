@@ -19,7 +19,7 @@ set -u
 
 # echo "TMPDIR: ${TMPDIR}"
 
-if test "$1" = "android"; then
+if test "${1:-ios}" = "android"; then
   TARGET=android
   OUTPUT=IEnvoyProxy.aar
 fi
@@ -32,7 +32,7 @@ if test -e $OUTPUT; then
 fi
 
 # Install dependencies. Go itself is a prerequisite.
-printf '\n--- Golang 1.19 or up needs to be installed! Try "brew install go" on MacOS or "snap install go" on Linux if we fail further down!'
+printf '\n--- Golang 1.21 or up needs to be installed! Try "brew install go" on MacOS or "snap install go" on Linux if we fail further down!'
 printf '\n--- Installing gomobile...\n'
 go install golang.org/x/mobile/cmd/gomobile@latest
 
@@ -53,12 +53,9 @@ if test -e ".git"; then
     cd lyrebird || exit 1
     git reset --hard
     cp -a . "$TMPDIR/lyrebird"
-    cd ../hysteria || exit 1
-    git reset --hard
-    cp -a . "$TMPDIR/hysteria"
     cd ../v2ray-core || exit 1
     git reset --hard
-    git clean -ffd # we add a file
+    git clean -fd # we add a file
     cp -a . "$TMPDIR/v2ray-core"
     cd ../snowflake || exit 1
     git reset --hard
@@ -69,36 +66,38 @@ else
     git clone https://gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird.git "$TMPDIR/lyrebird"
     cd "$TMPDIR/lyrebird" || exit 1
     git checkout --force --quiet 3915dcd
-    git clone https://github.com/HyNetwork/hysteria.git "$TMPDIR/hysteria"
-    cd hysteria || exit 1
-    git checkout --force --quiet b94f8a1
-    cd ..
     git clone https://github.com/v2fly/v2ray-core.git "$TMPDIR/v2ray-core"
-    cd v2ray-core || exit 1
-    git checkout --force --quiet 9b526285
-    cd ..
-    git clone https://git.torproject.org/pluggable-transports/snowflake.git "$TMPDIR/snowflake"
+    cd "$TMPDIR/v2ray-core" || exit 1
+    git checkout --force --quiet 49b50686
+    git clone https://gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake.git "$TMPDIR/snowflake"
     cd "$TMPDIR/snowflake" || exit 1
-    git checkout --force --quiet 7b77001
+    git checkout --force --quiet b130151
     cd "$CURRENT" || exit 1
 fi
 
 # Apply patches.
 printf '\n\n--- Apply patches to submodules...\n'
 echo `pwd`
-patch --directory=$TMPDIR/lyrebird --strip=1 < lyrebird.patch
-patch --directory=$TMPDIR/hysteria --strip=1 < hysteria.patch
-patch --directory=$TMPDIR/v2ray-core --strip=1 < v2ray-core.patch
-patch --directory=$TMPDIR/snowflake --strip=1 < snowflake.patch
+patch --directory="$TMPDIR/lyrebird" --strip=1 < lyrebird.patch
+patch --directory="$TMPDIR/v2ray-core" --strip=1 < v2ray-core.patch
+patch --directory="$TMPDIR/snowflake" --strip=1 < snowflake.patch
 
 # Compile framework.
 printf '\n\n--- Compile %s...\n' "$OUTPUT"
 export PATH=~/go/bin:$PATH
-cd "${TMPDIR}/IEnvoyProxy" || exit 1
+cd "$TMPDIR/IEnvoyProxy" || exit 1
 
 gomobile init
 
-MACOSX_DEPLOYMENT_TARGET=11.0 gomobile bind -target=$TARGET -o $CURRENT/$OUTPUT -iosversion=11.0 -androidapi=19 -v -tags=netcgo -trimpath
+MACOSX_DEPLOYMENT_TARGET=11.0 gomobile bind -target=$TARGET -ldflags="-s -w" -o "$CURRENT/$OUTPUT" -iosversion=12.0 -androidapi=21 -v -tags=netcgo -trimpath
+
+### Note:
+# $ go tool link -h
+#  -s	disable symbol table
+#  -w	disable DWARF generation
+#
+# -> Saves > 50% of file size on all targets!
+# See https://github.com/guardianproject/orbot/pull/1061
 
 rm -rf "$TMPDIR"
 

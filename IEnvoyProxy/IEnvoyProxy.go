@@ -2,22 +2,18 @@ package IEnvoyProxy
 
 import (
 	"errors"
-	"encoding/json"
-	"fmt"
 	"io/fs"
 	"log"
 	"net"
+	"os"
 	"strconv"
 	"time"
-	"os"
 
-	hysteria "github.com/apernet/hysteria/app/cmd"
 	v2ray "github.com/v2fly/v2ray-core/envoy"
-	snowflakeclient "git.torproject.org/pluggable-transports/snowflake.git/v2/client"
-	"gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird/cmd/lyrebird"
 	"gitlab.com/stevenmcdonald/tubesocks"
+	"gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird/cmd/lyrebird"
+	snowflakeclient "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/v2/client"
 )
-
 
 var meekPort = 47000
 
@@ -33,17 +29,6 @@ func MeekPort() int {
 var obfs2Port = 47100
 var obfs3Port = 47200
 var scramblesuitPort = 47400
-
-// real values:
-var hysteriaPort = 47500
-
-// HysteriaPort - Port where Hysteria will provide its service.
-// Only use this property after calling StartHysteria! It might have changed after that!
-//
-//goland:noinspection GoUnusedExportedFunction
-func HysteriaPort() int {
-	return hysteriaPort
-}
 
 var obfs4Port = 47300
 var obfs4TubesocksPort = 47350
@@ -87,7 +72,6 @@ func SnowflakePort() int {
 var lyrebirdRunning = false
 var meekRunning = false
 var obfs4Running = false
-var hysteriaRunning = false
 var v2rayWsRunning = false
 var v2raySrtpRunning = false
 var v2rayWechatRunning = false
@@ -95,7 +79,6 @@ var snowflakeRunning = false
 
 // StateLocation - Sets TOR_PT_STATE_LOCATION
 var StateLocation string
-
 
 /// Lyrebird (forked from obfs4proxy)
 
@@ -155,7 +138,7 @@ func StartLyrebird(logLevel string, enableLogging, unsafeLogging bool) int {
 // invasive changes. Todo maybe?
 
 func StartObfs4(user, password, logLevel string, enableLogging, unsafeLogging bool) int {
-	if (!lyrebirdRunning) {
+	if !lyrebirdRunning {
 		StartLyrebird(logLevel, enableLogging, unsafeLogging)
 	}
 
@@ -168,7 +151,7 @@ func StartObfs4(user, password, logLevel string, enableLogging, unsafeLogging bo
 }
 
 func StartMeek(user, password, logLevel string, enableLogging, unsafeLogging bool) int {
-	if (!lyrebirdRunning) {
+	if !lyrebirdRunning {
 		StartLyrebird(logLevel, enableLogging, unsafeLogging)
 	}
 
@@ -191,84 +174,6 @@ func StopLyrebird() {
 	go lyrebird.Stop()
 
 	lyrebirdRunning = false
-}
-
-
-/// Hysteria
-
-type HysteriaListen struct {
-	Listen string `json:"listen"`
-}
-
-type HysteriaConfig struct {
-	Server		string			`json:"server"`
-	Protocol	string			`json:"protocol"`
-	Obfs		string			`json:"obfs"`
-	Socks5		HysteriaListen	`json:"socks5"`
-	Up_mbps		int				`json:"up_mbps"`
-	Down_mbps	int				`json:"down_mbps"`
-	Ca			string			`json:"ca"`
-	Alpn		string			`json:"alpn"`
-}
-
-// StartHysteria -- Start the Hysteria client
-//
-// @param server Hysteria server hostname or IP and port, e.g. "192.168.64.2:32323"
-//
-// @param obfs Essentially a password, used to obfuscate the connection,
-// MUST use the same value on client and server
-//
-// @param ca Path to Root CA used by server (for self signed certs)
-func StartHysteria(server, obfs, ca string) int {
-	log.Println("Starting Hysteria")
-	if hysteriaRunning {
-		log.Printf("Hysteria already running on %d", hysteriaPort)
-		return hysteriaPort
-	}
-
-	hysteriaRunning = true
-
-	hysteriaPort = findPort(hysteriaPort)
-
-	// Hysteria uses a JSON file for config, creating JSON
-	// to pass in seems like the path of least resistance
-	listenAddr := fmt.Sprintf("127.0.0.1:%d", hysteriaPort)
-
-	listenConf := HysteriaListen{listenAddr}
-	conf := HysteriaConfig{
-		server,
-		"wechat-video",
-		obfs,
-		listenConf,
-		1000, // up_mbps
-		1000, // down_mbps
-		ca,
-		"Envoy",
-	}
-
-	confJson, err := json.Marshal(conf)
-
-	if err != nil {
-		fmt.Println(err)
-		return 0
-	}
-
-	// fmt.Printf("config: %s", string(confJson))
-
-	go hysteria.Start(&confJson)
-	log.Printf("Hysteria started on port %d", hysteriaPort)
-
-	return hysteriaPort
-}
-
-func StopHysteria() {
-	if !hysteriaRunning {
-		return
-	}
-
-	go hysteria.Stop()
-
-	hysteriaRunning = false
 }
 
 /// V2Ray
@@ -371,11 +276,17 @@ func StopV2RayWechat() {
 //
 // @param url URL of signaling broker.
 //
-// @param front Front domain.
+// @param fronts Comma-separated list of front domains.
 //
 // @param ampCache OPTIONAL. URL of AMP cache to use as a proxy for signaling.
 //
 //	Only needed when you want to do the rendezvous over AMP instead of a domain fronted server.
+//
+// @param sqsQueueURL OPTIONAL. URL of SQS Queue to use as a proxy for signaling.
+//
+// @param sqsAccessKeyId OPTIONAL. Access Key ID for credentials to access SQS Queue.
+//
+// @param sqsSecretKey OPTIONAL. Secret Key for credentials to access SQS Queue.
 //
 // @param logFile Name of log file. OPTIONAL. Defaults to no log.
 //
@@ -390,7 +301,10 @@ func StopV2RayWechat() {
 // @return Port number where Snowflake will listen on, if no error happens during start up.
 //
 //goland:noinspection GoUnusedExportedFunction
-func StartSnowflake(ice, url, front, ampCache, logFile string, logToStateDir, keepLocalAddresses, unsafeLogging bool, maxPeers int) int {
+func StartSnowflake(ice, url, fronts, ampCache, sqsQueueURL, sqsAccessKeyId, sqsSecretKey, logFile string,
+	logToStateDir, keepLocalAddresses, unsafeLogging bool,
+	maxPeers int) int {
+
 	if snowflakeRunning {
 		return snowflakePort
 	}
@@ -403,7 +317,8 @@ func StartSnowflake(ice, url, front, ampCache, logFile string, logToStateDir, ke
 
 	fixEnv()
 
-	go snowflakeclient.Start(&snowflakePort, &ice, &url, &front, &ampCache, &logFile, &logToStateDir, &keepLocalAddresses, &unsafeLogging, &maxPeers)
+	go snowflakeclient.Start(&snowflakePort, &ice, &url, &fronts, &ampCache, &sqsQueueURL, &sqsAccessKeyId, &sqsSecretKey,
+		&logFile, &logToStateDir, &keepLocalAddresses, &unsafeLogging, &maxPeers)
 
 	return snowflakePort
 }
@@ -427,7 +342,6 @@ type SnowflakeClientConnected interface {
 	// Connected - callback method to handle snowflake proxy client connections.
 	Connected()
 }
-
 
 ///////////////////
 // Helper functions
@@ -484,7 +398,6 @@ func fixEnv() {
 	_ = os.Setenv("TOR_PT_MANAGED_TRANSPORT_VER", "1")
 	_ = os.Setenv("TOR_PT_STATE_LOCATION", StateLocation)
 }
-
 
 func findPort(port int) int {
 	temp := port
