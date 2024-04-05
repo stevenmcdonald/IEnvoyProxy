@@ -29,6 +29,7 @@ func MeekPort() int {
 var obfs2Port = 47100
 var obfs3Port = 47200
 var scramblesuitPort = 47400
+var webtunnelPort = 47500
 
 var obfs4Port = 47300
 var obfs4TubesocksPort = 47350
@@ -98,13 +99,13 @@ func LyrebirdLogFile() string {
 //
 // @param logLevel Log level (ERROR/WARN/INFO/DEBUG). Defaults to ERROR if empty string.
 //
-// @param enableLogging Log to TOR_PT_STATE_LOCATION/obfs4proxy.log.
+// @param enableLogging Log to TOR_PT_STATE_LOCATION/lyrebird.log.
 //
 // @param unsafeLogging Disable the address scrubber.
 //
 // @return Port number where Tubesocks will listen on for Obfs4(!), if no error happens during start up.
 //
-//	If you need the other ports, check MeekPort, Obfs2Port, Obfs3Port and ScramblesuitPort properties!
+//	If you need the other ports, check MeekPort, Obfs2Port, Obfs3Port, ScramblesuitPort and WebtunnelPort properties!
 //
 //goland:noinspection GoUnusedExportedFunction
 func StartLyrebird(logLevel string, enableLogging, unsafeLogging bool) int {
@@ -122,7 +123,7 @@ func StartLyrebird(logLevel string, enableLogging, unsafeLogging bool) int {
 
 	fixEnv()
 
-	go lyrebird.Start(&meekPort, &obfs2Port, &obfs3Port, &obfs4Port, &scramblesuitPort, &logLevel, &enableLogging, &unsafeLogging)
+	go lyrebird.Start(&meekPort, &obfs2Port, &obfs3Port, &obfs4Port, &scramblesuitPort, &webtunnelPort, &logLevel, &enableLogging, &unsafeLogging)
 
 	// return obfs4TubesocksPort
 	return obfs4Port
@@ -284,9 +285,7 @@ func StopV2RayWechat() {
 //
 // @param sqsQueueURL OPTIONAL. URL of SQS Queue to use as a proxy for signaling.
 //
-// @param sqsAccessKeyId OPTIONAL. Access Key ID for credentials to access SQS Queue.
-//
-// @param sqsSecretKey OPTIONAL. Secret Key for credentials to access SQS Queue.
+// @param sqsCredsStr OPTIONAL. Credentials to access SQS Queue
 //
 // @param logFile Name of log file. OPTIONAL. Defaults to no log.
 //
@@ -301,7 +300,7 @@ func StopV2RayWechat() {
 // @return Port number where Snowflake will listen on, if no error happens during start up.
 //
 //goland:noinspection GoUnusedExportedFunction
-func StartSnowflake(ice, url, fronts, ampCache, sqsQueueURL, sqsAccessKeyId, sqsSecretKey, logFile string,
+func StartSnowflake(ice, url, fronts, ampCache, sqsQueueURL, sqsCredsStr, logFile string,
 	logToStateDir, keepLocalAddresses, unsafeLogging bool,
 	maxPeers int) int {
 
@@ -317,7 +316,7 @@ func StartSnowflake(ice, url, fronts, ampCache, sqsQueueURL, sqsAccessKeyId, sqs
 
 	fixEnv()
 
-	go snowflakeclient.Start(&snowflakePort, &ice, &url, &fronts, &ampCache, &sqsQueueURL, &sqsAccessKeyId, &sqsSecretKey,
+	go snowflakeclient.Start(&snowflakePort, &ice, &url, &fronts, &ampCache, &sqsQueueURL, &sqsCredsStr,
 		&logFile, &logToStateDir, &keepLocalAddresses, &unsafeLogging, &maxPeers)
 
 	return snowflakePort
