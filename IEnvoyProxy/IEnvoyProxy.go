@@ -11,7 +11,6 @@ import (
 
 	v2ray "github.com/v2fly/v2ray-core/envoy"
 	"gitlab.com/stevenmcdonald/tubesocks"
-	"gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird/cmd/lyrebird"
 	snowflakeclient "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/v2/client"
 )
 
@@ -43,6 +42,14 @@ var meekTubeSocksPort = 47360
 //goland:noinspection GoUnusedExportedFunction
 func Obfs4Port() int {
 	return obfs4TubesocksPort
+}
+
+// WebtunnelPort - Port where Lyrebird will provide its Webtunnel service.
+// Only use this property after calling StartLyrebird! It might have changed after that!
+//
+//goland:noinspection GoUnusedExportedFunction
+func WebtunnelPort() int {
+	return webtunnelPort
 }
 
 var v2raySrtpPort = 47600
@@ -120,6 +127,7 @@ func StartLyrebird(logLevel string, enableLogging, unsafeLogging bool) int {
 
 	meekPort = findPort(meekPort)
 	obfs4Port = findPort(obfs4Port)
+	webtunnelPort = findPort(webtunnelPort)
 
 	fixEnv()
 
@@ -393,7 +401,7 @@ func fixEnv() {
 			"  Use a non-temporary directory to allow reuse of potentially stored state.")
 	}
 
-	_ = os.Setenv("TOR_PT_CLIENT_TRANSPORTS", "meek_lite,obfs4,snowflake")
+	_ = os.Setenv("TOR_PT_CLIENT_TRANSPORTS", "meek_lite,obfs4,webtunnel,snowflake")
 	_ = os.Setenv("TOR_PT_MANAGED_TRANSPORT_VER", "1")
 	_ = os.Setenv("TOR_PT_STATE_LOCATION", StateLocation)
 }
