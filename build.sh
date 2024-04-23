@@ -53,6 +53,9 @@ if test -e ".git"; then
     cd lyrebird || exit 1
     git reset --hard
     cp -a . "$TMPDIR/lyrebird"
+    cd ../hysteria || exit 1
+    git reset --hard
+    cp -a . "$TMPDIR/hysteria"
     cd ../v2ray-core || exit 1
     git reset --hard
     git clean -fd # we add a file
@@ -66,6 +69,9 @@ else
     git clone https://gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird.git "$TMPDIR/lyrebird"
     cd "$TMPDIR/lyrebird" || exit 1
     git checkout --force --quiet aab4891
+    git clone https://github.com/apernet/hysteria.git "$TMPDIR/hysteria"
+    cd "$TMPDIR/hysteria" || exit 1
+    git checkout --force --quiet 234dc45
     git clone https://github.com/v2fly/v2ray-core.git "$TMPDIR/v2ray-core"
     cd "$TMPDIR/v2ray-core" || exit 1
     git checkout --force --quiet 49b50686
@@ -79,6 +85,7 @@ fi
 printf '\n\n--- Apply patches to submodules...\n'
 echo `pwd`
 patch --directory="$TMPDIR/lyrebird" --strip=1 < lyrebird.patch
+patch --directory="$TMPDIR/hysteria" --strip=1 < hysteria.patch
 patch --directory="$TMPDIR/v2ray-core" --strip=1 < v2ray-core.patch
 patch --directory="$TMPDIR/snowflake" --strip=1 < snowflake.patch
 

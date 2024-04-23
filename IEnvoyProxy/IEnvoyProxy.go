@@ -9,8 +9,11 @@ import (
 	"strconv"
 	"time"
 
+	"fmt"
+	hysteria2 "github.com/apernet/hysteria/app/cmd"
 	v2ray "github.com/v2fly/v2ray-core/envoy"
 	"gitlab.com/stevenmcdonald/tubesocks"
+	"gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird/cmd/lyrebird"
 	snowflakeclient "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/v2/client"
 )
 
@@ -57,16 +60,26 @@ var v2rayWechatPort = 47700
 var v2rayWsPort = 47800
 var snowflakePort = 47900
 
+//goland:noinspection GoUnusedExportedFunction
 func V2raySrtpPort() int {
 	return v2raySrtpPort
 }
 
+//goland:noinspection GoUnusedExportedFunction
 func V2rayWechatPort() int {
 	return v2rayWechatPort
 }
 
+//goland:noinspection GoUnusedExportedFunction
 func V2rayWsPort() int {
 	return v2rayWsPort
+}
+
+var hysteria2Port = 48000
+
+//goland:noinspection GoUnusedExportedFunction
+func Hysteria2Port() int {
+	return hysteria2Port
 }
 
 // SnowflakePort - Port where Snowflake will provide its service.
@@ -78,12 +91,11 @@ func SnowflakePort() int {
 }
 
 var lyrebirdRunning = false
-var meekRunning = false
-var obfs4Running = false
 var v2rayWsRunning = false
 var v2raySrtpRunning = false
 var v2rayWechatRunning = false
 var snowflakeRunning = false
+var hysteria2Running = false
 
 // StateLocation - Sets TOR_PT_STATE_LOCATION
 var StateLocation string
@@ -146,6 +158,7 @@ func StartLyrebird(logLevel string, enableLogging, unsafeLogging bool) int {
 // info as a parameter to StartObfs4/StartMeek() for us, but that requires more
 // invasive changes. Todo maybe?
 
+//goland:noinspection GoUnusedExportedFunction
 func StartObfs4(user, password, logLevel string, enableLogging, unsafeLogging bool) int {
 	if !lyrebirdRunning {
 		StartLyrebird(logLevel, enableLogging, unsafeLogging)
@@ -159,6 +172,7 @@ func StartObfs4(user, password, logLevel string, enableLogging, unsafeLogging bo
 	return obfs4TubesocksPort
 }
 
+//goland:noinspection GoUnusedExportedFunction
 func StartMeek(user, password, logLevel string, enableLogging, unsafeLogging bool) int {
 	if !lyrebirdRunning {
 		StartLyrebird(logLevel, enableLogging, unsafeLogging)
@@ -196,6 +210,8 @@ func StopLyrebird() {
 // @param wsPath - path the websocket
 //
 // @param id - v2ray UUID for auth
+//
+//goland:noinspection GoUnusedExportedFunction
 func StartV2RayWs(serverAddress, serverPort, wsPath, id string) int {
 	if v2rayWsRunning {
 		return v2rayWsPort
@@ -211,6 +227,7 @@ func StartV2RayWs(serverAddress, serverPort, wsPath, id string) int {
 	return v2rayWsPort
 }
 
+//goland:noinspection GoUnusedExportedFunction
 func StopV2RayWs() {
 	if !v2rayWsRunning {
 		return
@@ -221,6 +238,7 @@ func StopV2RayWs() {
 	v2rayWsRunning = false
 }
 
+//goland:noinspection GoUnusedExportedFunction
 func StartV2raySrtp(serverAddress, serverPort, id string) int {
 	log.Println("Starting V2Ray SRTP")
 	if v2raySrtpRunning {
@@ -239,6 +257,7 @@ func StartV2raySrtp(serverAddress, serverPort, id string) int {
 	return v2raySrtpPort
 }
 
+//goland:noinspection GoUnusedExportedFunction
 func StopV2RaySrtp() {
 	if !v2raySrtpRunning {
 		return
@@ -249,6 +268,7 @@ func StopV2RaySrtp() {
 	v2raySrtpRunning = false
 }
 
+//goland:noinspection GoUnusedExportedFunction
 func StartV2RayWechat(serverAddress, serverPort, id string) int {
 	log.Println("Starting V2Ray WeChat")
 	if v2rayWechatRunning {
@@ -267,6 +287,7 @@ func StartV2RayWechat(serverAddress, serverPort, id string) int {
 	return v2rayWechatPort
 }
 
+//goland:noinspection GoUnusedExportedFunction
 func StopV2RayWechat() {
 	if !v2rayWechatRunning {
 		return
@@ -275,6 +296,73 @@ func StopV2RayWechat() {
 	go v2ray.StopWechat()
 
 	v2rayWechatRunning = false
+}
+
+/// Hysteria2
+
+// StartHysteria2 - Start the Hysteria2 client.
+//
+// @param server A Hysteria2 server URL https://v2.hysteria.network/docs/developers/URI-Scheme/
+//
+// @return Port number where Hysteria2 will listen on, if no error happens during start up.
+//
+//goland:noinspection GoUnusedExportedFunction
+func StartHysteria2(server string) int {
+	if hysteria2Running {
+		return hysteria2Port
+	}
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		log.Printf("Could not get home dir: %s\n", err)
+
+		return 0
+	}
+
+	err = os.MkdirAll(fmt.Sprintf("%s/.hysteria", home), 0755)
+	if err != nil {
+		log.Printf("Could not create home dir: %s\n", err)
+
+		return 0
+	}
+
+	hysteria2Port = findPort(hysteria2Port)
+
+	err = os.WriteFile(fmt.Sprintf("%s/.hysteria/config", home),
+		[]byte(fmt.Sprintf("server: %s\n\nsocks5:\n  listen: 127.0.0.1:%d\n", server, hysteria2Port)), 0644)
+	if err != nil {
+		log.Printf("Could not write config file: %s\n", err)
+
+		return 0
+	}
+
+	hysteria2Running = true
+
+	go hysteria2.Start()
+
+	// Need to sleep a little here, to give Hysteria2 a chance to start,
+	// before we return the port. Otherwise, Hysteria2 wouldn't be listening
+	// on that configured SOCKS5 port, yet and connections would fail.
+	time.Sleep(time.Second)
+
+	return hysteria2Port
+}
+
+//goland:noinspection GoUnusedExportedFunction
+func StopHysteria2() {
+	if !hysteria2Running {
+		return
+	}
+
+	go hysteria2.Stop()
+
+	home, err := os.UserHomeDir()
+
+	if err == nil {
+		_ = os.Remove(fmt.Sprintf("%s/.hysteria/config", home))
+	}
+
+	hysteria2Running = false
 }
 
 /// Snowflake
@@ -387,7 +475,7 @@ func fixEnv() {
 
 		// Remove the test file again.
 		if err == nil {
-			file.Close()
+			_ = file.Close()
 
 			err = os.Remove(tempFile)
 		}
