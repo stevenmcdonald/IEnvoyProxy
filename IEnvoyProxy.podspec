@@ -40,6 +40,7 @@ Pod::Spec.new do |s|
     | Lyrebird  |   0.2.0 |
     | Snowflake |   2.9.2 |
     | V2Ray     |  5.15.1 |
+    | Hysteria2 |   2.4.1 |
 
                        DESC
 
