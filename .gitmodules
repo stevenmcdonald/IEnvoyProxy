@@ -10,3 +10,6 @@
 [submodule "snowflake"]
 	path = snowflake
 	url = https://gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake.git
+[submodule "hysteria"]
+	path = hysteria
+	url = https://github.com/apernet/hysteria.git

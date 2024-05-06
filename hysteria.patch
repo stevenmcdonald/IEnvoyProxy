@@ -1,0 +1,371 @@
+diff --git a/app/cmd/client.go b/app/cmd/client.go
+index b6745ab..d5e242a 100644
+--- a/app/cmd/client.go
++++ b/app/cmd/client.go
+@@ -37,7 +37,8 @@ import (
+ 
+ // Client flags
+ var (
+-	showQR bool
++	showQR       bool
++	socks5Server socks5.Server
+ )
+ 
+ var clientCmd = &cobra.Command{
+@@ -439,11 +440,11 @@ func runClient(cmd *cobra.Command, args []string) {
+ 	logger.Info("client mode")
+ 
+ 	if err := viper.ReadInConfig(); err != nil {
+-		logger.Fatal("failed to read client config", zap.Error(err))
++		logger.Error("failed to read client config", zap.Error(err))
+ 	}
+ 	var config clientConfig
+ 	if err := viper.Unmarshal(&config); err != nil {
+-		logger.Fatal("failed to parse client config", zap.Error(err))
++		logger.Error("failed to parse client config", zap.Error(err))
+ 	}
+ 
+ 	c, err := client.NewReconnectableClient(
+@@ -459,7 +460,8 @@ func runClient(cmd *cobra.Command, args []string) {
+ 			}
+ 		}, config.Lazy)
+ 	if err != nil {
+-		logger.Fatal("failed to initialize client", zap.Error(err))
++		logger.Error("failed to initialize client", zap.Error(err))
++		return
+ 	}
+ 	defer c.Close()
+ 
+@@ -515,6 +517,10 @@ func runClient(cmd *cobra.Command, args []string) {
+ 	runner.Run()
+ }
+ 
++func stopClient() {
++	socks5Server.Stop()
++}
++
+ type clientModeRunner struct {
+ 	ModeMap map[string]func() error
+ }
+@@ -528,7 +534,7 @@ func (r *clientModeRunner) Add(name string, f func() error) {
+ 
+ func (r *clientModeRunner) Run() {
+ 	if len(r.ModeMap) == 0 {
+-		logger.Fatal("no mode specified")
++		logger.Error("no mode specified")
+ 	}
+ 
+ 	type modeError struct {
+@@ -542,11 +548,11 @@ func (r *clientModeRunner) Run() {
+ 			errChan <- modeError{name, err}
+ 		}(name, f)
+ 	}
+-	// Fatal if any one of the modes fails
++	// Error if any one of the modes fails
+ 	for i := 0; i < len(r.ModeMap); i++ {
+ 		e := <-errChan
+ 		if e.Err != nil {
+-			logger.Fatal("failed to run "+e.Name, zap.Error(e.Err))
++			logger.Error("failed to run "+e.Name, zap.Error(e.Err))
+ 		}
+ 	}
+ }
+@@ -573,6 +579,9 @@ func clientSOCKS5(config socks5Config, c client.Client) error {
+ 		EventLogger: &socks5Logger{},
+ 	}
+ 	logger.Info("SOCKS5 server listening", zap.String("addr", config.Listen))
++
++	socks5Server = s
++
+ 	return s.Serve(l)
+ }
+ 
+diff --git a/app/cmd/ping.go b/app/cmd/ping.go
+index 856595b..b4358b7 100644
+--- a/app/cmd/ping.go
++++ b/app/cmd/ping.go
+@@ -26,25 +26,25 @@ func runPing(cmd *cobra.Command, args []string) {
+ 	logger.Info("ping mode")
+ 
+ 	if len(args) != 1 {
+-		logger.Fatal("must specify one and only one address")
++		logger.Error("must specify one and only one address")
+ 	}
+ 	addr := args[0]
+ 
+ 	if err := viper.ReadInConfig(); err != nil {
+-		logger.Fatal("failed to read client config", zap.Error(err))
++		logger.Error("failed to read client config", zap.Error(err))
+ 	}
+ 	var config clientConfig
+ 	if err := viper.Unmarshal(&config); err != nil {
+-		logger.Fatal("failed to parse client config", zap.Error(err))
++		logger.Error("failed to parse client config", zap.Error(err))
+ 	}
+ 	hyConfig, err := config.Config()
+ 	if err != nil {
+-		logger.Fatal("failed to load client config", zap.Error(err))
++		logger.Error("failed to load client config", zap.Error(err))
+ 	}
+ 
+ 	c, info, err := client.NewClient(hyConfig)
+ 	if err != nil {
+-		logger.Fatal("failed to initialize client", zap.Error(err))
++		logger.Error("failed to initialize client", zap.Error(err))
+ 	}
+ 	defer c.Close()
+ 	logger.Info("connected to server",
+@@ -55,7 +55,7 @@ func runPing(cmd *cobra.Command, args []string) {
+ 	start := time.Now()
+ 	conn, err := c.TCP(addr)
+ 	if err != nil {
+-		logger.Fatal("failed to connect", zap.Error(err), zap.String("time", time.Since(start).String()))
++		logger.Error("failed to connect", zap.Error(err), zap.String("time", time.Since(start).String()))
+ 	}
+ 	defer conn.Close()
+ 
+diff --git a/app/cmd/root.go b/app/cmd/root.go
+index cc7f39f..6b60c7c 100644
+--- a/app/cmd/root.go
++++ b/app/cmd/root.go
+@@ -101,6 +101,16 @@ func Execute() {
+ 	}
+ }
+ 
++func Start() {
++	disableUpdateCheck = true
++
++	_ = rootCmd.Execute()
++}
++
++func Stop() {
++	stopClient()
++}
++
+ func init() {
+ 	initFlags()
+ 	cobra.MousetrapHelpText = "" // Disable the mousetrap so Windows users can run the exe directly by double-clicking
+@@ -132,12 +142,12 @@ func initLogger() {
+ 	level, ok := logLevelMap[strings.ToLower(logLevel)]
+ 	if !ok {
+ 		fmt.Printf("unsupported log level: %s\n", logLevel)
+-		os.Exit(1)
++		return
+ 	}
+ 	enc, ok := logFormatMap[strings.ToLower(logFormat)]
+ 	if !ok {
+ 		fmt.Printf("unsupported log format: %s\n", logFormat)
+-		os.Exit(1)
++		return
+ 	}
+ 	c := zap.Config{
+ 		Level:             zap.NewAtomicLevelAt(level),
+@@ -152,7 +162,7 @@ func initLogger() {
+ 	logger, err = c.Build()
+ 	if err != nil {
+ 		fmt.Printf("failed to initialize logger: %s\n", err)
+-		os.Exit(1)
++		return
+ 	}
+ }
+ 
+diff --git a/app/cmd/server.go b/app/cmd/server.go
+index 9b6665e..848ff04 100644
+--- a/app/cmd/server.go
++++ b/app/cmd/server.go
+@@ -730,20 +730,20 @@ func runServer(cmd *cobra.Command, args []string) {
+ 	logger.Info("server mode")
+ 
+ 	if err := viper.ReadInConfig(); err != nil {
+-		logger.Fatal("failed to read server config", zap.Error(err))
++		logger.Error("failed to read server config", zap.Error(err))
+ 	}
+ 	var config serverConfig
+ 	if err := viper.Unmarshal(&config); err != nil {
+-		logger.Fatal("failed to parse server config", zap.Error(err))
++		logger.Error("failed to parse server config", zap.Error(err))
+ 	}
+ 	hyConfig, err := config.Config()
+ 	if err != nil {
+-		logger.Fatal("failed to load server config", zap.Error(err))
++		logger.Error("failed to load server config", zap.Error(err))
+ 	}
+ 
+ 	s, err := server.NewServer(hyConfig)
+ 	if err != nil {
+-		logger.Fatal("failed to initialize server", zap.Error(err))
++		logger.Error("failed to initialize server", zap.Error(err))
+ 	}
+ 	if config.Listen != "" {
+ 		logger.Info("server up and running", zap.String("listen", config.Listen))
+@@ -756,14 +756,14 @@ func runServer(cmd *cobra.Command, args []string) {
+ 	}
+ 
+ 	if err := s.Serve(); err != nil {
+-		logger.Fatal("failed to serve", zap.Error(err))
++		logger.Error("failed to serve", zap.Error(err))
+ 	}
+ }
+ 
+ func runTrafficStatsServer(listen string, handler http.Handler) {
+ 	logger.Info("traffic stats server up and running", zap.String("listen", listen))
+ 	if err := correctnet.HTTPListenAndServe(listen, handler); err != nil {
+-		logger.Fatal("failed to serve traffic stats", zap.Error(err))
++		logger.Error("failed to serve traffic stats", zap.Error(err))
+ 	}
+ }
+ 
+@@ -783,7 +783,7 @@ func runMasqTCPServer(s *masq.MasqTCPServer, httpAddr, httpsAddr string) {
+ 	}
+ 	err := <-errChan
+ 	if err != nil {
+-		logger.Fatal("failed to serve masquerade HTTP(S)", zap.Error(err))
++		logger.Error("failed to serve masquerade HTTP(S)", zap.Error(err))
+ 	}
+ }
+ 
+diff --git a/app/cmd/speedtest.go b/app/cmd/speedtest.go
+index 86bdbdb..70886e8 100644
+--- a/app/cmd/speedtest.go
++++ b/app/cmd/speedtest.go
+@@ -48,20 +48,20 @@ func runSpeedtest(cmd *cobra.Command, args []string) {
+ 	logger.Info("speed test mode")
+ 
+ 	if err := viper.ReadInConfig(); err != nil {
+-		logger.Fatal("failed to read client config", zap.Error(err))
++		logger.Error("failed to read client config", zap.Error(err))
+ 	}
+ 	var config clientConfig
+ 	if err := viper.Unmarshal(&config); err != nil {
+-		logger.Fatal("failed to parse client config", zap.Error(err))
++		logger.Error("failed to parse client config", zap.Error(err))
+ 	}
+ 	hyConfig, err := config.Config()
+ 	if err != nil {
+-		logger.Fatal("failed to load client config", zap.Error(err))
++		logger.Error("failed to load client config", zap.Error(err))
+ 	}
+ 
+ 	c, info, err := client.NewClient(hyConfig)
+ 	if err != nil {
+-		logger.Fatal("failed to initialize client", zap.Error(err))
++		logger.Error("failed to initialize client", zap.Error(err))
+ 	}
+ 	defer c.Close()
+ 	logger.Info("connected to server",
+@@ -81,9 +81,9 @@ func runDownloadTest(c client.Client) {
+ 	downConn, err := c.TCP(speedtestAddr)
+ 	if err != nil {
+ 		if errors.As(err, &hyErrors.DialError{}) {
+-			logger.Fatal("failed to connect (server may not support speed test)", zap.Error(err))
++			logger.Error("failed to connect (server may not support speed test)", zap.Error(err))
+ 		} else {
+-			logger.Fatal("failed to connect", zap.Error(err))
++			logger.Error("failed to connect", zap.Error(err))
+ 		}
+ 	}
+ 	defer downConn.Close()
+@@ -104,7 +104,7 @@ func runDownloadTest(c client.Client) {
+ 		}
+ 	})
+ 	if err != nil {
+-		logger.Fatal("download test failed", zap.Error(err))
++		logger.Error("download test failed", zap.Error(err))
+ 	}
+ 	logger.Info("download test complete")
+ }
+@@ -114,9 +114,9 @@ func runUploadTest(c client.Client) {
+ 	upConn, err := c.TCP(speedtestAddr)
+ 	if err != nil {
+ 		if errors.As(err, &hyErrors.DialError{}) {
+-			logger.Fatal("failed to connect (server may not support speed test)", zap.Error(err))
++			logger.Error("failed to connect (server may not support speed test)", zap.Error(err))
+ 		} else {
+-			logger.Fatal("failed to connect", zap.Error(err))
++			logger.Error("failed to connect", zap.Error(err))
+ 		}
+ 	}
+ 	defer upConn.Close()
+@@ -137,7 +137,7 @@ func runUploadTest(c client.Client) {
+ 		}
+ 	})
+ 	if err != nil {
+-		logger.Fatal("upload test failed", zap.Error(err))
++		logger.Error("upload test failed", zap.Error(err))
+ 	}
+ 	logger.Info("upload test complete")
+ }
+diff --git a/app/cmd/update.go b/app/cmd/update.go
+index 3b26740..447b79f 100644
+--- a/app/cmd/update.go
++++ b/app/cmd/update.go
+@@ -37,7 +37,7 @@ func runCheckUpdate(cmd *cobra.Command, args []string) {
+ 	checker := utils.NewServerUpdateChecker(appVersion, appPlatform, appArch, appType)
+ 	resp, err := checker.Check()
+ 	if err != nil {
+-		logger.Fatal("failed to check for updates", zap.Error(err))
++		logger.Error("failed to check for updates", zap.Error(err))
+ 	}
+ 	if resp.HasUpdate {
+ 		logger.Info("update available",
+diff --git a/app/internal/socks5/server.go b/app/internal/socks5/server.go
+index 84b58ed..cc4d43d 100644
+--- a/app/internal/socks5/server.go
++++ b/app/internal/socks5/server.go
+@@ -8,6 +8,7 @@ import (
+ 	"github.com/txthinking/socks5"
+ 
+ 	"github.com/apernet/hysteria/core/client"
++	"sync"
+ )
+ 
+ const udpBufferSize = 4096
+@@ -18,6 +19,9 @@ type Server struct {
+ 	AuthFunc    func(username, password string) bool // nil = no authentication
+ 	DisableUDP  bool
+ 	EventLogger EventLogger
++
++	mu   sync.Mutex
++	stop bool
+ }
+ 
+ type EventLogger interface {
+@@ -29,6 +33,15 @@ type EventLogger interface {
+ 
+ func (s *Server) Serve(listener net.Listener) error {
+ 	for {
++		s.mu.Lock()
++		stop := s.stop
++		s.mu.Unlock()
++
++		if stop {
++			_ = listener.Close()
++			return nil
++		}
++
+ 		conn, err := listener.Accept()
+ 		if err != nil {
+ 			return err
+@@ -37,6 +50,12 @@ func (s *Server) Serve(listener net.Listener) error {
+ 	}
+ }
+ 
++func (s *Server) Stop() {
++	s.mu.Lock()
++	s.stop = true
++	s.mu.Unlock()
++}
++
+ func (s *Server) dispatch(conn net.Conn) {
+ 	ok, _ := s.negotiate(conn)
+ 	if !ok {
+diff --git a/app/main.go b/app/main.go
+index 6d1554b..ce27206 100644
+--- a/app/main.go
++++ b/app/main.go
+@@ -1,4 +1,4 @@
+-package main
++package app
+ 
+ import "github.com/apernet/hysteria/app/cmd"
+ 
