@@ -6,15 +6,15 @@
   <packaging>aar</packaging>
   <groupId>org.greatfire</groupId>
   <artifactId>IEnvoyProxy</artifactId>
-  <version>1.4.1</version>
+  <version>2.0.0</version>
   <name>IEnvoyProxy</name>
   <description>This is a fork of IPtProxy (https://github.com/tladesignz/IPtProxy) modified to include Go projects used by Envoy (https://github.com/greatfire/envoy)
-currently this includes: Lyrebird, Snowflake, v2ray</description>
+currently this includes: Lyrebird, Snowflake, v2ray, Hysteria</description>
   <url>https://greatfire.org</url>
   <licenses>
     <license>
       <name>GPLv3-or-later</name>
-      <url>https://raw.githubusercontent.com/Yawning/obfs4/master/LICENSE-GPL3.txt</url>
+      <url>https://gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird/-/blob/main/LICENSE-GPL3.txt</url>
       <distribution>repo</distribution>
     </license>
     <license>
