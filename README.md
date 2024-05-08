@@ -40,7 +40,45 @@ Problems solved in particular are:
 
 ## iOS/macOS
 
-IEnvoyProxy has not been tested on iOS/macOS. It should build and run, but it hasn't been tested. Let us know if you're interested in using this on iOS or macOS.
+### Installation
+
+IEnvoyProxy is available through [CocoaPods](https://cocoapods.org). To install
+it, add the following line to your `Podfile`:
+
+```ruby
+pod 'IEnvoyProxy', :git => 'https://github.com/stevenmcdonald/IEnvoyProxy.git', :tag => '2.0.0'
+```
+
+### Getting Started
+
+Before using IEnvoyProxy you need to specify a place on disk for the transports
+to store their state information and log files.
+
+You will need to provide `StateLocation` *before* use of any transports provided by `Lyrebird` or `Snowflake`:
+
+```swift
+let fm = FileManager.default
+
+// Good choice for apps where IEnvoyProxy runs inside an extension:
+
+if let ptDir = fm
+    .containerURL(forSecurityApplicationGroupIdentifier: "group.com.example.app")? 
+    .appendingPathComponent("pt_state")?
+    .path
+{
+    IPtProxy.setStateLocation(ptDir)
+}
+
+// For normal apps which run IEnvoyProxy inline:
+
+if let ptDir = fm.urls(for: .documentDirectory, in: .userDomainMask)
+    .first?
+    .appendingPathComponent("pt_state")
+    .path 
+{
+    IPtProxy.setStateLocation(ptDir)
+}
+```
 
 ## Android 
 
@@ -50,7 +88,7 @@ IEnvoyProxy is available through [JitPack](https://jitpack.io). To install
 it, simply add the following line to your `build.gradle` file:
 
 ```groovy
-implementation 'org.greatfire:IEnvoyProxy:1.1.0'
+implementation 'org.greatfire:IEnvoyProxy:2.0.0'
 ```
 
 And this to your root `build.gradle` at the end of repositories:
@@ -112,7 +150,7 @@ IPtProxy.setStateLocation(fileCacheDir.getAbsolutePath());
 
 ### Requirements
 
-You'll need Go 1.18 as a prerequisite.
+You'll need Go 1.21 as a prerequisite.
 
 You will also need Xcode installed when compiling for iOS and an Android NDK
 when compiling for Android.
@@ -178,6 +216,7 @@ export GO386=sse2
 ## Authors
 
 - Steven McDonald, scm@eds.org
+- Benjamin Erhart, berhart@netzarchitekten.com
 
 for GreatFire https://en.greatfire.org/
 

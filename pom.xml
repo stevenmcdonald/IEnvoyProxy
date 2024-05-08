@@ -9,7 +9,7 @@
   <version>2.0.0</version>
   <name>IEnvoyProxy</name>
   <description>This is a fork of IPtProxy (https://github.com/tladesignz/IPtProxy) modified to include Go projects used by Envoy (https://github.com/greatfire/envoy)
-currently this includes: Lyrebird, Snowflake, v2ray, Hysteria</description>
+currently this includes: Lyrebird, Snowflake, V2Ray and Hysteria2.</description>
   <url>https://greatfire.org</url>
   <licenses>
     <license>
@@ -35,6 +35,16 @@ currently this includes: Lyrebird, Snowflake, v2ray, Hysteria</description>
     <license>
       <name>BSD-2-clause</name>
       <url>https://raw.githubusercontent.com/Yawning/obfs4/master/LICENSE</url>
+      <distribution>repo</distribution>
+    </license>
+    <license>
+      <name>MIT</name>
+      <url>https://raw.githubusercontent.com/v2fly/v2ray-core/master/LICENSE</url>
+      <distribution>repo</distribution>
+    </license>
+    <license>
+      <name>MIT</name>
+      <url>https://raw.githubusercontent.com/apernet/hysteria/master/LICENSE.md</url>
       <distribution>repo</distribution>
     </license>
   </licenses>
