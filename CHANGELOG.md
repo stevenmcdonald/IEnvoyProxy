@@ -1,5 +1,8 @@
 # IEnvoyProxy Changlog
 
+## 2.0.1
+- Fixed weird mixup of obfs4Port and obfs4TubesocksPort. Properly expose all correctly.
+
 ## 2.0.0
 - Updated Lyrebird to version 0.2.0.
 - Added Webtunnel support.
