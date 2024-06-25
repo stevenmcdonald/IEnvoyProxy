@@ -31,21 +31,38 @@ func MeekPort() int {
 var obfs2Port = 47100
 var obfs3Port = 47200
 var scramblesuitPort = 47400
-var webtunnelPort = 47500
 
 var obfs4Port = 47300
-var obfs4TubesocksPort = 47350
-var meekTubeSocksPort = 47360
 
 // Obfs4Port - Port where Lyrebird will provide its Obfs4 service.
 // Only use this property after calling StartLyrebird! It might have changed after that!
 //
-// XXX This actually returns the port that the tubesocks proxy listens on
-//
 //goland:noinspection GoUnusedExportedFunction
 func Obfs4Port() int {
-	return obfs4TubesocksPort
+	return obfs4Port
 }
+
+var obfs4TubeSocksPort = 47350
+
+// Obfs4TubeSocksPort - Port where TubeSocks will listen to forward to Lyrebird's Obfs4 service.
+// Only use this property after calling StartObfs4! It might have changed after that!
+//
+//goland:noinspection GoUnusedExportedFunction
+func Obfs4TubeSocksPort() int {
+	return obfs4TubeSocksPort
+}
+
+var meekTubeSocksPort = 47360
+
+// MeekTubeSocksPort - Port where TubeSocks will listen to forward to Lyrebird's Meek service.
+// Only use this property after calling StartMeek! It might have changed after that!
+//
+//goland:noinspection GoUnusedExportedFunction
+func MeekTubeSocksPort() int {
+	return meekTubeSocksPort
+}
+
+var webtunnelPort = 47500
 
 // WebtunnelPort - Port where Lyrebird will provide its Webtunnel service.
 // Only use this property after calling StartLyrebird! It might have changed after that!
@@ -122,14 +139,14 @@ func LyrebirdLogFile() string {
 //
 // @param unsafeLogging Disable the address scrubber.
 //
-// @return Port number where Tubesocks will listen on for Obfs4(!), if no error happens during start up.
+// @return Port number where Lyrebird will listen on for Obfs4(!), if no error happens during start up.
 //
 //	If you need the other ports, check MeekPort, Obfs2Port, Obfs3Port, ScramblesuitPort and WebtunnelPort properties!
 //
 //goland:noinspection GoUnusedExportedFunction
 func StartLyrebird(logLevel string, enableLogging, unsafeLogging bool) int {
 	if lyrebirdRunning {
-		return obfs4TubesocksPort
+		return obfs4Port
 	}
 
 	lyrebirdRunning = true
@@ -145,7 +162,6 @@ func StartLyrebird(logLevel string, enableLogging, unsafeLogging bool) int {
 
 	go lyrebird.Start(&meekPort, &obfs2Port, &obfs3Port, &obfs4Port, &scramblesuitPort, &webtunnelPort, &logLevel, &enableLogging, &unsafeLogging)
 
-	// return obfs4TubesocksPort
 	return obfs4Port
 }
 
@@ -164,12 +180,12 @@ func StartObfs4(user, password, logLevel string, enableLogging, unsafeLogging bo
 		StartLyrebird(logLevel, enableLogging, unsafeLogging)
 	}
 
-	obfs4TubesocksPort = findPort(obfs4TubesocksPort)
+	obfs4TubeSocksPort = findPort(obfs4TubeSocksPort)
 	var obfs4Url = "127.0.0.1:" + strconv.Itoa(obfs4Port)
 
-	go tubesocks.Start(user, password, obfs4Url, obfs4TubesocksPort)
+	go tubesocks.Start(user, password, obfs4Url, obfs4TubeSocksPort)
 
-	return obfs4TubesocksPort
+	return obfs4TubeSocksPort
 }
 
 //goland:noinspection GoUnusedExportedFunction

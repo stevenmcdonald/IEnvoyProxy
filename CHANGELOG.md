@@ -1,5 +1,16 @@
 # IEnvoyProxy Changlog
 
+## 2.0.1
+- Fixed weird mixup of obfs4Port and obfs4TubesocksPort. Properly expose all correctly.
+
+## 2.0.0
+- Updated Lyrebird to version 0.2.0.
+- Added Webtunnel support.
+- Updated Snowflake to version 2.9.2.
+- Updated V2Ray to version 5.15.1.
+- Replaced Hysteria 1 (discontinued) with Hysteria 2.4.1 (incompatible!).
+- Now builds for macOS and iOS.
+
 ## 1.5.0
  - Bring Lyrebird (forked from obfs4proxy) back(ish) over from IPtProxy
 
