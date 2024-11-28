@@ -48,14 +48,11 @@ Pod::Spec.new do |s|
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'Benjamin Erhart' => 'berhart@netzarchitekten.com' }
   s.source           = { :http => "https://github.com/stevenmcdonald/IEnvoyProxy/releases/download/e#{s.version}/IEnvoyProxy.xcframework.zip" }
-  s.social_media_url = 'https://twitter.com/tladesignz'
+  s.social_media_url = 'https://chaos.social/@tla'
 
   s.ios.deployment_target = '12.0'
   s.osx.deployment_target = '11'
 
-  # This will only work, if `prepare_command` was successful, or if you
-  # called `pod update` a second time after a build which will have triggered
-  # the `script_phase`, or if you ran `build.sh` manually.
   s.vendored_frameworks = 'IEnvoyProxy.xcframework'
 
   s.libraries = 'resolv'
