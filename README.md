@@ -16,11 +16,12 @@ We have previously supported (available in git history):
 * [Hysteria](https://github.com/HyNetwork/hysteria)
 
 
-While this library was made for use with Envoy, it does not depend on Envoy, and may be useful for other situations. Some of the choices made are specific to our needs, but if others want to use this, we can look in to making it more flexible.
+While this library was made for use with Envoy, it does not depend on Envoy, and may be useful for other situations. 
+Some of the choices made are specific to our needs, but if others want to use this, we can look in to making it more flexible.
 
-Envoy currently only supports Android, so the iOS/MacOS version is not tested, but should work. None of the changes should cause compatability problems.
-
-In all cases there is a Start() and Stop() (e.g. StartDnstt/StopDnstt) function for each service. There are also accessors to get the port each service is listening on (unused ports are selected at startup time, so these functions are only reliable after the service is started), e.g. DnstttPort(). Obfs4proxy and V2ray use multiple ports, so there are multiple accessors, see the code in `IEnvoyProxy/IEnvoyProxy.go` for details.
+In all cases there is the `Controller.Start()` and `Controller.Stop()` function to start a service. 
+There is also `Controller.Port()` and `Controller.LocalAddres()` to get the port each service is listening on.
+If the respective service is not started, yet, these functions will return `0` resp. an empty string.
 
 IEnvoyProxy is still a work in progress. Feel free to open issues in this repo if you have questions or comments.
 
@@ -31,12 +32,8 @@ Problems solved in particular are:
 - Proxies are gathered under one roof here, since you cannot have two
   `gomobile` frameworks as dependencies, since there are some common Go
   runtime functions exported, which would create a name clash.
-- Free ports to be used are automatically found by this library and returned to the
-  consuming app. You can use the initial values for premature configuration just
-  fine in situations, where you can be pretty sure, they're going to be available
-  (typically on iOS). When that's not the case (e.g. multiple instances of your app
-  on a multi-user Android), you should first start the transports and then use the 
-  returned ports for configuration of other components (e.g. Tor). 
+- Free ports to be used are automatically found by this library and can be fetched by the
+  consuming app. 
 
 ## iOS/macOS
 
@@ -46,7 +43,7 @@ IEnvoyProxy is available through [CocoaPods](https://cocoapods.org). To install
 it, add the following line to your `Podfile`:
 
 ```ruby
-pod 'IEnvoyProxy', :git => 'https://github.com/stevenmcdonald/IEnvoyProxy.git', :tag => '2.0.1'
+pod 'IEnvoyProxy', :git => 'https://github.com/stevenmcdonald/IEnvoyProxy.git', :tag => '3.0.0'
 ```
 
 ### Getting Started
@@ -54,30 +51,34 @@ pod 'IEnvoyProxy', :git => 'https://github.com/stevenmcdonald/IEnvoyProxy.git', 
 Before using IEnvoyProxy you need to specify a place on disk for the transports
 to store their state information and log files.
 
-You will need to provide `StateLocation` *before* use of any transports provided by `Lyrebird` or `Snowflake`:
+You will need to provide a writable `StateLocation` on construction:
 
 ```swift
 let fm = FileManager.default
 
 // Good choice for apps where IEnvoyProxy runs inside an extension:
 
-if let ptDir = fm
+guard let ptDir = fm
     .containerURL(forSecurityApplicationGroupIdentifier: "group.com.example.app")? 
     .appendingPathComponent("pt_state")?
     .path
-{
-    IPtProxy.setStateLocation(ptDir)
+else {
+    return
 }
+
+let ptc = IEnvoyProxyController(ptDir, enableLogging: true, unsafeLogging: false, logLevel: "INFO")
 
 // For normal apps which run IEnvoyProxy inline:
 
-if let ptDir = fm.urls(for: .documentDirectory, in: .userDomainMask)
+guard let ptDir = fm.urls(for: .documentDirectory, in: .userDomainMask)
     .first?
     .appendingPathComponent("pt_state")
     .path 
-{
-    IPtProxy.setStateLocation(ptDir)
+else {
+    return
 }
+
+let ptc = IEnvoyProxyController(ptDir, enableLogging: true, unsafeLogging: false, logLevel: "INFO")
 ```
 
 ## Android 
@@ -88,7 +89,7 @@ IEnvoyProxy is available through [JitPack](https://jitpack.io). To install
 it, simply add the following line to your `build.gradle` file:
 
 ```groovy
-implementation 'org.greatfire:IEnvoyProxy:2.0.1'
+implementation 'org.greatfire:IEnvoyProxy:3.0.0'
 ```
 
 And this to your root `build.gradle` at the end of repositories:
@@ -138,11 +139,11 @@ Before using IEnvoyProxy you need to specify a place on disk for it to store its
 information. We recommend the path returned by `Context#getCacheDir()`:
 
 ```java
-File fileCacheDir = new File(getCacheDir(), "pt");
+import IEnvoyProxy
 
-if (!fileCacheDir.exists()) fileCacheDir.mkdir();
+File ptDir = new File(getCacheDir(), "pt_state");
 
-IPtProxy.setStateLocation(fileCacheDir.getAbsolutePath());
+Controller ptc = Controller(ptDir, true, false, "INFO");
 ```
 
 
@@ -225,6 +226,7 @@ for GreatFire https://en.greatfire.org/
 - Benjamin Erhart, berhart@netzarchitekten.com
 - Nathan Freitas
 - Annette (formerly Bim)
+- cohosh
 
 for the Guardian Project https://guardianproject.info
 
