@@ -125,16 +125,17 @@ index 856595b..b4358b7 100644
  	defer conn.Close()
  
 diff --git a/app/cmd/root.go b/app/cmd/root.go
-index cc7f39f..6b60c7c 100644
+index cc7f39f..e499808 100644
 --- a/app/cmd/root.go
 +++ b/app/cmd/root.go
-@@ -101,6 +101,16 @@ func Execute() {
+@@ -101,6 +101,17 @@ func Execute() {
  	}
  }
  
 +func Start() {
 +	disableUpdateCheck = true
 +
++	rootCmd.SetArgs([]string{})
 +	_ = rootCmd.Execute()
 +}
 +
@@ -145,7 +146,7 @@ index cc7f39f..6b60c7c 100644
  func init() {
  	initFlags()
  	cobra.MousetrapHelpText = "" // Disable the mousetrap so Windows users can run the exe directly by double-clicking
-@@ -132,12 +142,12 @@ func initLogger() {
+@@ -132,12 +143,12 @@ func initLogger() {
  	level, ok := logLevelMap[strings.ToLower(logLevel)]
  	if !ok {
  		fmt.Printf("unsupported log level: %s\n", logLevel)
@@ -160,7 +161,7 @@ index cc7f39f..6b60c7c 100644
  	}
  	c := zap.Config{
  		Level:             zap.NewAtomicLevelAt(level),
-@@ -152,7 +162,7 @@ func initLogger() {
+@@ -152,7 +163,7 @@ func initLogger() {
  	logger, err = c.Build()
  	if err != nil {
  		fmt.Printf("failed to initialize logger: %s\n", err)
