@@ -50,44 +50,25 @@ printf '\n\n--- Fetching submodule dependencies...\n'
 if test -e ".git"; then
     # There's a .git directory - we must be in the development pod.
     git submodule update --init --recursive
-    cd lyrebird || exit 1
-    git reset --hard
-    cp -a . "$TMPDIR/lyrebird"
-    cd ../hysteria || exit 1
+    cd hysteria || exit 1
     git reset --hard
     cp -a . "$TMPDIR/hysteria"
     cd ../v2ray-core || exit 1
     git reset --hard
     git clean -fd # we add a file
     cp -a . "$TMPDIR/v2ray-core"
-    cd ../snowflake || exit 1
-    git reset --hard
-    cp -a . "$TMPDIR/snowflake"
     cd ..
 else
     # No .git directory - That's a normal install.
-    git clone https://gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird.git "$TMPDIR/lyrebird"
-    cd "$TMPDIR/lyrebird" || exit 1
-    git checkout --force --quiet aab4891
-    git clone https://github.com/apernet/hysteria.git "$TMPDIR/hysteria"
-    cd "$TMPDIR/hysteria" || exit 1
-    git checkout --force --quiet 234dc45
-    git clone https://github.com/v2fly/v2ray-core.git "$TMPDIR/v2ray-core"
-    cd "$TMPDIR/v2ray-core" || exit 1
-    git checkout --force --quiet 49b50686
-    git clone https://gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake.git "$TMPDIR/snowflake"
-    cd "$TMPDIR/snowflake" || exit 1
-    git checkout --force --quiet 05a9580
-    cd "$CURRENT" || exit 1
+    git clone --recursive --shallow-submodules --depth 1 --branch "234dc45" https://github.com/apernet/hysteria.git "$TMPDIR/hysteria"
+    git clone --recursive --shallow-submodules --depth 1 --branch "49b50686" https://github.com/v2fly/v2ray-core.git "$TMPDIR/v2ray-core"
 fi
 
 # Apply patches.
 printf '\n\n--- Apply patches to submodules...\n'
-echo `pwd`
-patch --directory="$TMPDIR/lyrebird" --strip=1 < lyrebird.patch
+pwd
 patch --directory="$TMPDIR/hysteria" --strip=1 < hysteria.patch
 patch --directory="$TMPDIR/v2ray-core" --strip=1 < v2ray-core.patch
-patch --directory="$TMPDIR/snowflake" --strip=1 < snowflake.patch
 
 # Compile framework.
 printf '\n\n--- Compile %s...\n' "$OUTPUT"
@@ -96,7 +77,7 @@ cd "$TMPDIR/IEnvoyProxy" || exit 1
 
 gomobile init
 
-MACOSX_DEPLOYMENT_TARGET=11.0 gomobile bind -target=$TARGET -ldflags="-s -w" -o "$CURRENT/$OUTPUT" -iosversion=12.0 -androidapi=21 -v -tags=netcgo -trimpath
+MACOSX_DEPLOYMENT_TARGET=11.0 gomobile bind -target=$TARGET -ldflags="-s -w -checklinkname=0" -o "$CURRENT/$OUTPUT" -iosversion=12.0 -androidapi=21 -v -tags=netcgo -trimpath
 
 ### Note:
 # $ go tool link -h

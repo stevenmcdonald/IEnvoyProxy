@@ -1,5 +1,18 @@
 # IEnvoyProxy Changlog
 
+## 3.0.0
+- Took over complete rewrite of IPtProxy:
+  - Got rid of patches and the goptlib interface.
+  - Instead, have our own unified code which creates transports using Lyrebird and Snowflake as dependencies.
+  - Structured with classes now instead of global functions.
+  - Improved interface:
+    - When `#start` returns, it's now safe to use the transport.
+    - `#start` will throw errors if something's wrong.
+    - Callback for when transport stopped. (PTs only!)
+  - Added TubeSocks, V2Ray and Hysteria 2 support to `Controller`.
+- Updated Snowflake to v2.10.1.
+- Updated Lyrebird to v0.5.0.
+
 ## 2.0.1
 - Fixed weird mixup of obfs4Port and obfs4TubesocksPort. Properly expose all correctly.
 

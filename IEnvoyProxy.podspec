@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'IEnvoyProxy'
-  s.version          = '2.0.1'
+  s.version          = '3.0.0'
   s.summary          = 'Lyrebird/Obfs4proxy, Snowflake and V2Ray for iOS and macOS'
 
   s.description      = <<-DESC
@@ -48,28 +48,11 @@ Pod::Spec.new do |s|
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'Benjamin Erhart' => 'berhart@netzarchitekten.com' }
   s.source           = { :http => "https://github.com/stevenmcdonald/IEnvoyProxy/releases/download/e#{s.version}/IEnvoyProxy.xcframework.zip" }
-  s.social_media_url = 'https://twitter.com/tladesignz'
+  s.social_media_url = 'https://chaos.social/@tla'
 
   s.ios.deployment_target = '12.0'
   s.osx.deployment_target = '11'
 
-  s.preserve_paths = 'build.sh', '*.patch', 'IEnvoyProxy/*'
-
-  # This will only be executed once.
-  s.prepare_command = './build.sh'
-
-  # That's why this is also here, albeit it will be too late here.
-  # You will need to re-run `pod update` to make the last line work.
-  s.script_phase = {
-    :name => 'Go build of IEnvoyProxy.xcframework',
-    :execution_position => :before_compile,
-    :script => 'sh "$PODS_TARGET_SRCROOT/build.sh"',
-    :output_files => ['$(DERIVED_FILE_DIR)/IEnvoyProxy.xcframework'],
-  }
-
-  # This will only work, if `prepare_command` was successful, or if you
-  # called `pod update` a second time after a build which will have triggered
-  # the `script_phase`, or if you ran `build.sh` manually.
   s.vendored_frameworks = 'IEnvoyProxy.xcframework'
 
   s.libraries = 'resolv'
