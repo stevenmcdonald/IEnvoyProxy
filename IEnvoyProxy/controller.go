@@ -12,7 +12,7 @@ import (
 
 	"fmt"
 	hysteria2 "github.com/apernet/hysteria/app/v2/cmd"
-	v2ray "github.com/v2fly/v2ray-core/envoy"
+	v2ray "github.com/v2fly/v2ray-core/v5/envoy"
 	"gitlab.com/stevenmcdonald/tubesocks"
 	pt "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib"
 	ptlog "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird/common/log"
