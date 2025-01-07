@@ -541,21 +541,9 @@ func (c *Controller) Start(methodName string, proxy string) error {
 
 	case Hysteria2:
 		if !c.hysteria2Running {
-			home, err := os.UserHomeDir()
-			if err != nil {
-				ptlog.Errorf("Could not get home dir: %s\n", err.Error())
-				return err
-			}
-
-			err = os.MkdirAll(fmt.Sprintf("%s/.hysteria", home), 0755)
-			if err != nil {
-				ptlog.Errorf("Could not create home dir: %s\n", err.Error())
-				return err
-			}
-
 			c.hysteria2Port = findPort(c.hysteria2Port)
 
-			err = os.WriteFile(fmt.Sprintf("%s/.hysteria/config", home),
+			err = os.WriteFile(fmt.Sprintf("%s/hysteria.yaml", c.stateDir),
 				[]byte(fmt.Sprintf("server: %s\n\nsocks5:\n  listen: 127.0.0.1:%d\n", c.Hysteria2Server, c.hysteria2Port)), 0644)
 			if err != nil {
 				ptlog.Errorf("Could not write config file: %s\n", err.Error())
@@ -564,7 +552,7 @@ func (c *Controller) Start(methodName string, proxy string) error {
 
 			c.hysteria2Running = true
 
-			go hysteria2.Start()
+			go hysteria2.Start(fmt.Sprintf("%s/hysteria.yaml", c.stateDir))
 
 			// Need to sleep a little here, to give Hysteria2 a chance to start.
 			// Otherwise, Hysteria2 wouldn't be listening
@@ -681,11 +669,7 @@ func (c *Controller) Stop(methodName string) {
 			ptlog.Noticef("Shutting down %s", methodName)
 			go hysteria2.Stop()
 
-			home, err := os.UserHomeDir()
-
-			if err == nil {
-				_ = os.Remove(fmt.Sprintf("%s/.hysteria/config", home))
-			}
+			_ = os.Remove(fmt.Sprintf("%s/hysteria.yaml", c.stateDir))
 
 			c.hysteria2Running = false
 		}
