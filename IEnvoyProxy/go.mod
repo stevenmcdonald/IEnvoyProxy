@@ -5,13 +5,13 @@ go 1.22.0
 toolchain go1.23.3
 
 require (
-	github.com/apernet/hysteria/app v0.0.0-00010101000000-000000000000
+	github.com/apernet/hysteria/app/v2 v2.6.0
 	github.com/v2fly/v2ray-core v4.45.2+incompatible
 	gitlab.com/stevenmcdonald/tubesocks v0.0.0-20220419205400-4305891e0caa
 	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib v1.6.0
 	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird v0.0.0-20241119022218-28e9e5ccce1d
 	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/v2 v2.10.1
-	golang.org/x/net v0.31.0
+	golang.org/x/net v0.34.0
 )
 
 require (
@@ -19,11 +19,11 @@ require (
 	github.com/adrg/xdg v0.4.0 // indirect
 	github.com/aead/cmac v0.0.0-20160719120800-7af84192f0b1 // indirect
 	github.com/ajg/form v1.5.1 // indirect
-	github.com/andybalholm/brotli v1.0.6 // indirect
+	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/apernet/go-tproxy v0.0.0-20230809025308-8f4723fd742f // indirect
-	github.com/apernet/hysteria/core v0.0.0-00010101000000-000000000000 // indirect
-	github.com/apernet/hysteria/extras v0.0.0-00010101000000-000000000000 // indirect
-	github.com/apernet/quic-go v0.42.1-0.20240323215309-32a339817822 // indirect
+	github.com/apernet/hysteria/core/v2 v2.0.0-00010101000000-000000000000 // indirect
+	github.com/apernet/hysteria/extras/v2 v2.0.0-00010101000000-000000000000 // indirect
+	github.com/apernet/quic-go v0.48.2-0.20241104191913-cb103fcecfe7 // indirect
 	github.com/apernet/sing-tun v0.2.6-0.20240323130332-b9f6511036ad // indirect
 	github.com/aws/aws-sdk-go-v2 v1.32.2 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.28.0 // indirect
@@ -43,7 +43,7 @@ require (
 	github.com/boljen/go-bitmap v0.0.0-20151001105940-23cd2fb0ce7d // indirect
 	github.com/bufbuild/protocompile v0.8.0 // indirect
 	github.com/caddyserver/certmagic v0.17.2 // indirect
-	github.com/cloudflare/circl v1.3.7 // indirect
+	github.com/cloudflare/circl v1.3.9 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dchest/siphash v1.2.3 // indirect
 	github.com/dgryski/go-metro v0.0.0-20211217172704-adc40b04c140 // indirect
@@ -60,10 +60,13 @@ require (
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/btree v1.1.2 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/gopacket v1.1.19 // indirect
 	github.com/google/pprof v0.0.0-20230602150820-91b7bce49751 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
+	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.6 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.5 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
@@ -72,7 +75,13 @@ require (
 	github.com/klauspost/cpuid/v2 v2.2.6 // indirect
 	github.com/klauspost/reedsolomon v1.12.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
-	github.com/libdns/libdns v0.2.1 // indirect
+	github.com/libdns/cloudflare v0.1.1 // indirect
+	github.com/libdns/duckdns v0.2.0 // indirect
+	github.com/libdns/gandi v1.0.3 // indirect
+	github.com/libdns/godaddy v1.0.3 // indirect
+	github.com/libdns/libdns v0.2.2 // indirect
+	github.com/libdns/namedotcom v0.3.3 // indirect
+	github.com/libdns/vultr v1.0.0 // indirect
 	github.com/lunixbochs/struc v0.0.0-20200707160740-784aaebc1d40 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mdp/qrterminal/v3 v3.1.1 // indirect
@@ -107,7 +116,7 @@ require (
 	github.com/pires/go-proxyproto v0.7.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/quic-go/qpack v0.4.0 // indirect
+	github.com/quic-go/qpack v0.5.1 // indirect
 	github.com/quic-go/quic-go v0.41.0 // indirect
 	github.com/realclientip/realclientip-go v1.0.0 // indirect
 	github.com/refraction-networking/utls v1.6.7 // indirect
@@ -137,6 +146,7 @@ require (
 	github.com/v2fly/v2ray-core/v5 v5.15.1 // indirect
 	github.com/vincent-petithory/dataurl v1.0.0 // indirect
 	github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74 // indirect
+	github.com/vultr/govultr/v3 v3.6.4 // indirect
 	github.com/wlynxg/anet v0.0.3 // indirect
 	github.com/xiaokangwang/VLite v0.0.0-20220418190619-cff95160a432 // indirect
 	github.com/xtaci/kcp-go/v5 v5.6.8 // indirect
@@ -150,15 +160,16 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
 	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba // indirect
-	golang.org/x/crypto v0.29.0 // indirect
-	golang.org/x/exp v0.0.0-20230725093048-515e97ebf090 // indirect
-	golang.org/x/mobile v0.0.0-20241108191957-fa514ef75a0f // indirect
+	golang.org/x/crypto v0.32.0 // indirect
+	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
+	golang.org/x/mobile v0.0.0-20250106192035-c31d5b91ecc3 // indirect
 	golang.org/x/mod v0.22.0 // indirect
-	golang.org/x/sync v0.9.0 // indirect
-	golang.org/x/sys v0.27.0 // indirect
-	golang.org/x/text v0.20.0 // indirect
+	golang.org/x/oauth2 v0.20.0 // indirect
+	golang.org/x/sync v0.10.0 // indirect
+	golang.org/x/sys v0.29.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
-	golang.org/x/tools v0.27.0 // indirect
+	golang.org/x/tools v0.29.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240123012728-ef4313101c80 // indirect
 	google.golang.org/grpc v1.62.1 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
@@ -170,8 +181,8 @@ require (
 )
 
 replace (
-	github.com/apernet/hysteria/app => ../hysteria/app
-	github.com/apernet/hysteria/core => ../hysteria/core
-	github.com/apernet/hysteria/extras => ../hysteria/extras
+	github.com/apernet/hysteria/app/v2 => ../hysteria/app
+	github.com/apernet/hysteria/core/v2 => ../hysteria/core
+	github.com/apernet/hysteria/extras/v2 => ../hysteria/extras
 	github.com/v2fly/v2ray-core v4.45.2+incompatible => ../v2ray-core
 )

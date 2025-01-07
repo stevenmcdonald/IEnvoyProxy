@@ -1,8 +1,8 @@
 diff --git a/app/cmd/client.go b/app/cmd/client.go
-index b6745ab..d5e242a 100644
+index 65bc7e0..450ab6c 100644
 --- a/app/cmd/client.go
 +++ b/app/cmd/client.go
-@@ -37,7 +37,8 @@ import (
+@@ -39,7 +39,8 @@ import (
  
  // Client flags
  var (
@@ -12,7 +12,7 @@ index b6745ab..d5e242a 100644
  )
  
  var clientCmd = &cobra.Command{
-@@ -439,11 +440,11 @@ func runClient(cmd *cobra.Command, args []string) {
+@@ -445,11 +446,11 @@ func runClient(cmd *cobra.Command, args []string) {
  	logger.Info("client mode")
  
  	if err := viper.ReadInConfig(); err != nil {
@@ -26,7 +26,7 @@ index b6745ab..d5e242a 100644
  	}
  
  	c, err := client.NewReconnectableClient(
-@@ -459,7 +460,8 @@ func runClient(cmd *cobra.Command, args []string) {
+@@ -465,7 +466,8 @@ func runClient(cmd *cobra.Command, args []string) {
  			}
  		}, config.Lazy)
  	if err != nil {
@@ -36,8 +36,18 @@ index b6745ab..d5e242a 100644
  	}
  	defer c.Close()
  
-@@ -515,6 +517,10 @@ func runClient(cmd *cobra.Command, args []string) {
- 	runner.Run()
+@@ -536,14 +538,18 @@ func runClient(cmd *cobra.Command, args []string) {
+ 		} else {
+ 			_ = c.Close() // Close the client here as Fatal will exit the program without running defer
+ 			if r.Err != nil {
+-				logger.Fatal(r.Msg, zap.Error(r.Err))
++				logger.Error(r.Msg, zap.Error(r.Err))
+ 			} else {
+-				logger.Fatal(r.Msg)
++				logger.Error(r.Msg)
+ 			}
+ 		}
+ 	}
  }
  
 +func stopClient() {
@@ -47,30 +57,7 @@ index b6745ab..d5e242a 100644
  type clientModeRunner struct {
  	ModeMap map[string]func() error
  }
-@@ -528,7 +534,7 @@ func (r *clientModeRunner) Add(name string, f func() error) {
- 
- func (r *clientModeRunner) Run() {
- 	if len(r.ModeMap) == 0 {
--		logger.Fatal("no mode specified")
-+		logger.Error("no mode specified")
- 	}
- 
- 	type modeError struct {
-@@ -542,11 +548,11 @@ func (r *clientModeRunner) Run() {
- 			errChan <- modeError{name, err}
- 		}(name, f)
- 	}
--	// Fatal if any one of the modes fails
-+	// Error if any one of the modes fails
- 	for i := 0; i < len(r.ModeMap); i++ {
- 		e := <-errChan
- 		if e.Err != nil {
--			logger.Fatal("failed to run "+e.Name, zap.Error(e.Err))
-+			logger.Error("failed to run "+e.Name, zap.Error(e.Err))
- 		}
- 	}
- }
-@@ -573,6 +579,9 @@ func clientSOCKS5(config socks5Config, c client.Client) error {
+@@ -612,6 +618,9 @@ func clientSOCKS5(config socks5Config, c client.Client) error {
  		EventLogger: &socks5Logger{},
  	}
  	logger.Info("SOCKS5 server listening", zap.String("addr", config.Listen))
@@ -81,7 +68,7 @@ index b6745ab..d5e242a 100644
  }
  
 diff --git a/app/cmd/ping.go b/app/cmd/ping.go
-index 856595b..b4358b7 100644
+index db45052..ca802c1 100644
 --- a/app/cmd/ping.go
 +++ b/app/cmd/ping.go
 @@ -26,25 +26,25 @@ func runPing(cmd *cobra.Command, args []string) {
@@ -125,19 +112,20 @@ index 856595b..b4358b7 100644
  	defer conn.Close()
  
 diff --git a/app/cmd/root.go b/app/cmd/root.go
-index cc7f39f..e499808 100644
+index a58e2bc..a3fd043 100644
 --- a/app/cmd/root.go
 +++ b/app/cmd/root.go
-@@ -101,6 +101,20 @@
+@@ -105,6 +105,21 @@ func Execute() {
  	}
  }
  
 +func Start(configPath string) {
-+	disableUpdateCheck = true
-+	args := []string{}
++	args := []string{"--disable-update-check"}
++
 +	if configPath != "" {
 +		args = append(args, "--config", configPath)
 +	}
++
 +	rootCmd.SetArgs(args)
 +	_ = rootCmd.Execute()
 +}
@@ -149,7 +137,7 @@ index cc7f39f..e499808 100644
  func init() {
  	initFlags()
  	cobra.MousetrapHelpText = "" // Disable the mousetrap so Windows users can run the exe directly by double-clicking
-@@ -132,12 +146,12 @@
+@@ -136,12 +151,12 @@ func initLogger() {
  	level, ok := logLevelMap[strings.ToLower(logLevel)]
  	if !ok {
  		fmt.Printf("unsupported log level: %s\n", logLevel)
@@ -164,7 +152,7 @@ index cc7f39f..e499808 100644
  	}
  	c := zap.Config{
  		Level:             zap.NewAtomicLevelAt(level),
-@@ -152,7 +166,7 @@
+@@ -156,7 +171,7 @@ func initLogger() {
  	logger, err = c.Build()
  	if err != nil {
  		fmt.Printf("failed to initialize logger: %s\n", err)
@@ -174,10 +162,10 @@ index cc7f39f..e499808 100644
  }
  
 diff --git a/app/cmd/server.go b/app/cmd/server.go
-index 9b6665e..848ff04 100644
+index a4b8470..6102b94 100644
 --- a/app/cmd/server.go
 +++ b/app/cmd/server.go
-@@ -730,20 +730,20 @@ func runServer(cmd *cobra.Command, args []string) {
+@@ -898,20 +898,20 @@ func runServer(cmd *cobra.Command, args []string) {
  	logger.Info("server mode")
  
  	if err := viper.ReadInConfig(); err != nil {
@@ -202,7 +190,7 @@ index 9b6665e..848ff04 100644
  	}
  	if config.Listen != "" {
  		logger.Info("server up and running", zap.String("listen", config.Listen))
-@@ -756,14 +756,14 @@ func runServer(cmd *cobra.Command, args []string) {
+@@ -924,14 +924,14 @@ func runServer(cmd *cobra.Command, args []string) {
  	}
  
  	if err := s.Serve(); err != nil {
@@ -219,7 +207,7 @@ index 9b6665e..848ff04 100644
  	}
  }
  
-@@ -783,7 +783,7 @@ func runMasqTCPServer(s *masq.MasqTCPServer, httpAddr, httpsAddr string) {
+@@ -951,7 +951,7 @@ func runMasqTCPServer(s *masq.MasqTCPServer, httpAddr, httpsAddr string) {
  	}
  	err := <-errChan
  	if err != nil {
@@ -229,10 +217,10 @@ index 9b6665e..848ff04 100644
  }
  
 diff --git a/app/cmd/speedtest.go b/app/cmd/speedtest.go
-index 86bdbdb..70886e8 100644
+index f5c37fb..0165d9d 100644
 --- a/app/cmd/speedtest.go
 +++ b/app/cmd/speedtest.go
-@@ -48,20 +48,20 @@ func runSpeedtest(cmd *cobra.Command, args []string) {
+@@ -51,20 +51,20 @@ func runSpeedtest(cmd *cobra.Command, args []string) {
  	logger.Info("speed test mode")
  
  	if err := viper.ReadInConfig(); err != nil {
@@ -257,7 +245,7 @@ index 86bdbdb..70886e8 100644
  	}
  	defer c.Close()
  	logger.Info("connected to server",
-@@ -81,9 +81,9 @@ func runDownloadTest(c client.Client) {
+@@ -99,9 +99,9 @@ func runDownloadTest(c client.Client) {
  	downConn, err := c.TCP(speedtestAddr)
  	if err != nil {
  		if errors.As(err, &hyErrors.DialError{}) {
@@ -269,7 +257,7 @@ index 86bdbdb..70886e8 100644
  		}
  	}
  	defer downConn.Close()
-@@ -104,7 +104,7 @@ func runDownloadTest(c client.Client) {
+@@ -122,7 +122,7 @@ func runDownloadTest(c client.Client) {
  		}
  	})
  	if err != nil {
@@ -278,7 +266,7 @@ index 86bdbdb..70886e8 100644
  	}
  	logger.Info("download test complete")
  }
-@@ -114,9 +114,9 @@ func runUploadTest(c client.Client) {
+@@ -132,9 +132,9 @@ func runUploadTest(c client.Client) {
  	upConn, err := c.TCP(speedtestAddr)
  	if err != nil {
  		if errors.As(err, &hyErrors.DialError{}) {
@@ -290,7 +278,7 @@ index 86bdbdb..70886e8 100644
  		}
  	}
  	defer upConn.Close()
-@@ -137,7 +137,7 @@ func runUploadTest(c client.Client) {
+@@ -155,7 +155,7 @@ func runUploadTest(c client.Client) {
  		}
  	})
  	if err != nil {
@@ -300,7 +288,7 @@ index 86bdbdb..70886e8 100644
  	logger.Info("upload test complete")
  }
 diff --git a/app/cmd/update.go b/app/cmd/update.go
-index 3b26740..447b79f 100644
+index 11eadd0..43f8d86 100644
 --- a/app/cmd/update.go
 +++ b/app/cmd/update.go
 @@ -37,7 +37,7 @@ func runCheckUpdate(cmd *cobra.Command, args []string) {
@@ -313,13 +301,13 @@ index 3b26740..447b79f 100644
  	if resp.HasUpdate {
  		logger.Info("update available",
 diff --git a/app/internal/socks5/server.go b/app/internal/socks5/server.go
-index 84b58ed..cc4d43d 100644
+index 0fc7de6..fbec34d 100644
 --- a/app/internal/socks5/server.go
 +++ b/app/internal/socks5/server.go
 @@ -8,6 +8,7 @@ import (
  	"github.com/txthinking/socks5"
  
- 	"github.com/apernet/hysteria/core/client"
+ 	"github.com/apernet/hysteria/core/v2/client"
 +	"sync"
  )
  
@@ -364,12 +352,12 @@ index 84b58ed..cc4d43d 100644
  	ok, _ := s.negotiate(conn)
  	if !ok {
 diff --git a/app/main.go b/app/main.go
-index 6d1554b..ce27206 100644
+index 81d8168..5276507 100644
 --- a/app/main.go
 +++ b/app/main.go
 @@ -1,4 +1,4 @@
 -package main
 +package app
  
- import "github.com/apernet/hysteria/app/cmd"
+ import "github.com/apernet/hysteria/app/v2/cmd"
  

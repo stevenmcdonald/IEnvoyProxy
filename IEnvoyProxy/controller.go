@@ -11,7 +11,7 @@ import (
 	"path"
 
 	"fmt"
-	hysteria2 "github.com/apernet/hysteria/app/cmd"
+	hysteria2 "github.com/apernet/hysteria/app/v2/cmd"
 	v2ray "github.com/v2fly/v2ray-core/envoy"
 	"gitlab.com/stevenmcdonald/tubesocks"
 	pt "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib"
