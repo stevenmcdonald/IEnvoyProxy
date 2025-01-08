@@ -1,5 +1,9 @@
 # IEnvoyProxy Changlog
 
+## 3.1.0
+- Updated V2Ray to latest version 5.23.0.
+- V2Ray now incorporates Hysteria2, so dropped own Hysteria2 for V2Ray version.
+
 ## 3.0.0
 - Took over complete rewrite of IPtProxy:
   - Got rid of patches and the goptlib interface.

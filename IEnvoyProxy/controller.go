@@ -10,9 +10,8 @@ import (
 	"os"
 	"path"
 
+	"IEnvoyProxy/v2ray"
 	"fmt"
-	hysteria2 "github.com/apernet/hysteria/app/cmd"
-	v2ray "github.com/v2fly/v2ray-core/envoy"
 	"gitlab.com/stevenmcdonald/tubesocks"
 	pt "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib"
 	ptlog "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird/common/log"
@@ -230,7 +229,11 @@ func addExtraArgs(args *pt.Args, extraArgs *pt.Args) {
 
 func acceptLoop(f base.ClientFactory, ln *pt.SocksListener, proxyURL *url.URL,
 	extraArgs *pt.Args, shutdown chan struct{}, methodName string, transportStopped OnTransportStopped) {
-	defer ln.Close()
+
+	defer func(ln *pt.SocksListener) {
+		_ = ln.Close()
+	}(ln)
+
 	for {
 		conn, err := ln.AcceptSocks()
 		if err != nil {
@@ -249,7 +252,9 @@ func acceptLoop(f base.ClientFactory, ln *pt.SocksListener, proxyURL *url.URL,
 func clientHandler(f base.ClientFactory, conn *pt.SocksConn, proxyURL *url.URL,
 	extraArgs *pt.Args, shutdown chan struct{}, methodName string, transportStopped OnTransportStopped) {
 
-	defer conn.Close()
+	defer func(conn *pt.SocksConn) {
+		_ = conn.Close()
+	}(conn)
 
 	addExtraArgs(&conn.Req.Args, extraArgs)
 	args, err := f.ParseArgs(&conn.Req.Args)
@@ -302,7 +307,9 @@ func clientHandler(f base.ClientFactory, conn *pt.SocksConn, proxyURL *url.URL,
 		return
 	}
 
-	defer remote.Close()
+	defer func(remote net.Conn) {
+		_ = remote.Close()
+	}(remote)
 
 	done := make(chan struct{}, 2)
 	go copyLoop(conn, remote, done)
@@ -512,64 +519,53 @@ func (c *Controller) Start(methodName string, proxy string) error {
 	case V2RayWs:
 		if !c.v2rayWsRunning {
 			c.v2rayWsPort = findPort(c.v2rayWsPort)
-			clientPort := strconv.Itoa(c.v2rayWsPort)
+
+			err := v2ray.StartWs(c.v2rayWsPort, c.V2RayServerAddress, c.V2RayServerPort, c.V2RayWsPath, c.V2RayId)
+			if err != nil {
+				ptlog.Errorf("Failed to initialize %s: %s", methodName, err)
+				return err
+			}
 
 			c.v2rayWsRunning = true
-
-			go v2ray.StartWs(&clientPort, &c.V2RayServerAddress, &c.V2RayServerPort, &c.V2RayWsPath, &c.V2RayId)
 		}
 
 	case V2RaySrtp:
 		if !c.v2raySrtpRunning {
 			c.v2raySrtpPort = findPort(c.v2raySrtpPort)
-			clientPort := strconv.Itoa(c.v2raySrtpPort)
+
+			err := v2ray.StartSrtp(c.v2raySrtpPort, c.V2RayServerAddress, c.V2RayServerPort, c.V2RayId)
+			if err != nil {
+				ptlog.Errorf("Failed to initialize %s: %s", methodName, err)
+				return err
+			}
 
 			c.v2raySrtpRunning = true
-
-			go v2ray.StartSrtp(&clientPort, &c.V2RayServerAddress, &c.V2RayServerPort, &c.V2RayId)
 		}
 
 	case V2RayWechat:
 		if !c.v2rayWechatRunning {
 			c.v2rayWechatPort = findPort(c.v2rayWechatPort)
-			clientPort := strconv.Itoa(c.v2rayWechatPort)
+
+			err := v2ray.StartWechat(c.v2rayWechatPort, c.V2RayServerAddress, c.V2RayServerPort, c.V2RayId)
+			if err != nil {
+				ptlog.Errorf("Failed to initialize %s: %s", methodName, err)
+				return err
+			}
 
 			c.v2rayWechatRunning = true
-
-			go v2ray.StartWechat(&clientPort, &c.V2RayServerAddress, &c.V2RayServerPort, &c.V2RayId)
 		}
 
 	case Hysteria2:
 		if !c.hysteria2Running {
-			home, err := os.UserHomeDir()
-			if err != nil {
-				ptlog.Errorf("Could not get home dir: %s\n", err.Error())
-				return err
-			}
-
-			err = os.MkdirAll(fmt.Sprintf("%s/.hysteria", home), 0755)
-			if err != nil {
-				ptlog.Errorf("Could not create home dir: %s\n", err.Error())
-				return err
-			}
-
 			c.hysteria2Port = findPort(c.hysteria2Port)
 
-			err = os.WriteFile(fmt.Sprintf("%s/.hysteria/config", home),
-				[]byte(fmt.Sprintf("server: %s\n\nsocks5:\n  listen: 127.0.0.1:%d\n", c.Hysteria2Server, c.hysteria2Port)), 0644)
+			err = v2ray.StartHysteria2(c.hysteria2Port, c.Hysteria2Server)
 			if err != nil {
-				ptlog.Errorf("Could not write config file: %s\n", err.Error())
+				ptlog.Errorf("Failed to initialize %s: %s", methodName, err)
 				return err
 			}
 
 			c.hysteria2Running = true
-
-			go hysteria2.Start()
-
-			// Need to sleep a little here, to give Hysteria2 a chance to start.
-			// Otherwise, Hysteria2 wouldn't be listening
-			// on that configured SOCKS5 port, yet and connections would fail.
-			time.Sleep(time.Second)
 		}
 
 	case Snowflake:
@@ -679,15 +675,10 @@ func (c *Controller) Stop(methodName string) {
 	case Hysteria2:
 		if c.hysteria2Running {
 			ptlog.Noticef("Shutting down %s", methodName)
-			go hysteria2.Stop()
-
-			home, err := os.UserHomeDir()
-
-			if err == nil {
-				_ = os.Remove(fmt.Sprintf("%s/.hysteria/config", home))
-			}
-
+			go v2ray.StopHysteria2()
 			c.hysteria2Running = false
+		} else {
+			ptlog.Warnf("No listener for %s", methodName)
 		}
 
 	default:
