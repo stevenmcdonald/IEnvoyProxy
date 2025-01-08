@@ -10,8 +10,8 @@ import (
 	"os"
 	"path"
 
+	"IEnvoyProxy/v2ray"
 	"fmt"
-	v2ray "github.com/v2fly/v2ray-core/v5/envoy"
 	"gitlab.com/stevenmcdonald/tubesocks"
 	pt "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib"
 	ptlog "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird/common/log"
@@ -229,7 +229,11 @@ func addExtraArgs(args *pt.Args, extraArgs *pt.Args) {
 
 func acceptLoop(f base.ClientFactory, ln *pt.SocksListener, proxyURL *url.URL,
 	extraArgs *pt.Args, shutdown chan struct{}, methodName string, transportStopped OnTransportStopped) {
-	defer ln.Close()
+
+	defer func(ln *pt.SocksListener) {
+		_ = ln.Close()
+	}(ln)
+
 	for {
 		conn, err := ln.AcceptSocks()
 		if err != nil {
@@ -248,7 +252,9 @@ func acceptLoop(f base.ClientFactory, ln *pt.SocksListener, proxyURL *url.URL,
 func clientHandler(f base.ClientFactory, conn *pt.SocksConn, proxyURL *url.URL,
 	extraArgs *pt.Args, shutdown chan struct{}, methodName string, transportStopped OnTransportStopped) {
 
-	defer conn.Close()
+	defer func(conn *pt.SocksConn) {
+		_ = conn.Close()
+	}(conn)
 
 	addExtraArgs(&conn.Req.Args, extraArgs)
 	args, err := f.ParseArgs(&conn.Req.Args)
@@ -301,7 +307,9 @@ func clientHandler(f base.ClientFactory, conn *pt.SocksConn, proxyURL *url.URL,
 		return
 	}
 
-	defer remote.Close()
+	defer func(remote net.Conn) {
+		_ = remote.Close()
+	}(remote)
 
 	done := make(chan struct{}, 2)
 	go copyLoop(conn, remote, done)
@@ -551,8 +559,6 @@ func (c *Controller) Start(methodName string, proxy string) error {
 		if !c.hysteria2Running {
 			c.hysteria2Port = findPort(c.hysteria2Port)
 
-			ptlog.Noticef(v2ray.GetHysteria2Config(c.hysteria2Port, c.Hysteria2Server))
-
 			err = v2ray.StartHysteria2(c.hysteria2Port, c.Hysteria2Server)
 			if err != nil {
 				ptlog.Errorf("Failed to initialize %s: %s", methodName, err)
@@ -560,22 +566,6 @@ func (c *Controller) Start(methodName string, proxy string) error {
 			}
 
 			c.hysteria2Running = true
-
-			//err = os.WriteFile(fmt.Sprintf("%s/hysteria.yaml", c.stateDir),
-			//	[]byte(fmt.Sprintf("server: %s\n\nsocks5:\n  listen: 127.0.0.1:%d\n", c.Hysteria2Server, c.hysteria2Port)), 0644)
-			//if err != nil {
-			//	ptlog.Errorf("Could not write config file: %s\n", err.Error())
-			//	return err
-			//}
-			//
-			//c.hysteria2Running = true
-			//
-			//go hysteria2.Start(fmt.Sprintf("%s/hysteria.yaml", c.stateDir))
-			//
-			//// Need to sleep a little here, to give Hysteria2 a chance to start.
-			//// Otherwise, Hysteria2 wouldn't be listening
-			//// on that configured SOCKS5 port, yet and connections would fail.
-			//time.Sleep(time.Second)
 		}
 
 	case Snowflake:
@@ -686,11 +676,9 @@ func (c *Controller) Stop(methodName string) {
 		if c.hysteria2Running {
 			ptlog.Noticef("Shutting down %s", methodName)
 			go v2ray.StopHysteria2()
-			//go hysteria2.Stop()
-			//
-			//_ = os.Remove(fmt.Sprintf("%s/hysteria.yaml", c.stateDir))
-
 			c.hysteria2Running = false
+		} else {
+			ptlog.Warnf("No listener for %s", methodName)
 		}
 
 	default:
