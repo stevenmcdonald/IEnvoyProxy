@@ -213,6 +213,15 @@ If this is the case, you will need to set this flag to build IEnvoyProxy:
 export GO386=sse2
 ``` 
 
+## Development
+
+### To update dependencies and clean up:
+```bash
+cd IEnvoyProxy
+go mod tidy
+go get golang.org/x/mobile/cmd/gomobile@latest
+go get google.golang.org/genproto@latest
+```
 
 ## Authors
 
