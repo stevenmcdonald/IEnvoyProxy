@@ -26,13 +26,11 @@ import (
 
 	core "github.com/v2fly/v2ray-core/v5"
 	_ "github.com/v2fly/v2ray-core/v5/main/distro/all"
-	"net/url"
 )
 
 var osWsSignals = make(chan os.Signal, 1)
 var osWechatSignals = make(chan os.Signal, 1)
 var osSrtpSignals = make(chan os.Signal, 1)
-var osHysteriaSignals = make(chan os.Signal, 1)
 
 // getInbound
 //
@@ -136,46 +134,6 @@ func getQuicConfig(clientPort int, serverAddress, serverPort, quicType, id strin
       }
     ]
   }`, getInbound(clientPort), serverAddress, serverPort, id, quicType)
-}
-
-func getHysteria2Config(clientPort int, serverUrl string) (string, error) {
-	u, err := url.Parse(serverUrl)
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf(`
-  {
-    "log": {
-      "loglevel": "error"
-    },
-    "inbounds": [%s
-    ],
-    "outbounds": [
-      {
-        "protocol": "hysteria2",
-        "settings": {
-          "servers": [
-            {
-              "address": "%s",
-              "port": %s
-            }
-          ]
-        },
-        "streamSettings": {
-          "network": "hysteria2",
-          "hy2Settings": {
-            "password": "%s"
-          },
-          "security": "tls",
-          "tlsSettings": {
-            "serverName": "www.v2fly.org",
-            "allowInsecure": true
-          }
-        }
-      }
-    ]
-  }`, getInbound(clientPort), u.Hostname(), u.Port(), u.User.String()), nil
 }
 
 func startServer(jsonConfig string) (*core.Instance, error) {
@@ -309,40 +267,4 @@ func StartWechat(clientPort int, serverAddress, serverPort, id string) error {
 
 func StopWechat() {
 	osWechatSignals <- syscall.SIGTERM
-}
-
-// StartHysteria2 - start Hysteria2 transport
-//
-// @param clientPort - client SOCKS port routed to the Hysteria2 server
-//
-// @param serverUrl - Hysteria2 server config URL, see https://v2.hysteria.network/docs/developers/URI-Scheme/
-//
-// @returns error, if transport could not be started, or `nil` on success.
-func StartHysteria2(clientPort int, serverUrl string) error {
-	config, err := getHysteria2Config(clientPort, serverUrl)
-	if err != nil {
-		return err
-	}
-
-	server, err := startServer(config)
-	if err != nil {
-		return err
-	}
-
-	go func(server *core.Instance) {
-		defer func(server *core.Instance) {
-			_ = server.Close()
-		}(server)
-
-		{
-			signal.Notify(osHysteriaSignals, syscall.SIGTERM)
-			<-osHysteriaSignals
-		}
-	}(server)
-
-	return nil
-}
-
-func StopHysteria2() {
-	osHysteriaSignals <- syscall.SIGTERM
 }

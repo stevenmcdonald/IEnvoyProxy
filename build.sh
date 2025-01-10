@@ -50,15 +50,24 @@ printf '\n\n--- Fetching submodule dependencies...\n'
 if test -e ".git"; then
     # There's a .git directory - we must be in the development pod.
     git submodule update --init --recursive
-    cd v2ray-core || exit 1
+    cd hysteria || exit 1
+    git reset --hard
+    cp -a . "$TMPDIR/hysteria"
+    cd ../v2ray-core || exit 1
     git reset --hard
     git clean -fd # we add a file
     cp -a . "$TMPDIR/v2ray-core"
     cd ..
 else
     # No .git directory - That's a normal install.
+    git clone --recursive --shallow-submodules --depth 1 --branch "15e31d48" https://github.com/apernet/hysteria.git "$TMPDIR/hysteria"
     git clone --recursive --shallow-submodules --depth 1 --branch "d59c2b4c" https://github.com/v2fly/v2ray-core.git "$TMPDIR/v2ray-core"
 fi
+
+# Apply patches.
+printf '\n\n--- Apply patches to submodules...\n'
+pwd
+patch --directory="$TMPDIR/hysteria" --strip=1 < hysteria.patch
 
 # Compile framework.
 printf '\n\n--- Compile %s...\n' "$OUTPUT"

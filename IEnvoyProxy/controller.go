@@ -12,6 +12,7 @@ import (
 
 	"IEnvoyProxy/v2ray"
 	"fmt"
+	hysteria2 "github.com/apernet/hysteria/app/v2/cmd"
 	"gitlab.com/stevenmcdonald/tubesocks"
 	pt "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib"
 	ptlog "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird/common/log"
@@ -559,13 +560,25 @@ func (c *Controller) Start(methodName string, proxy string) error {
 		if !c.hysteria2Running {
 			c.hysteria2Port = findPort(c.hysteria2Port)
 
-			err = v2ray.StartHysteria2(c.hysteria2Port, c.Hysteria2Server)
+			configFile := fmt.Sprintf("%s/hysteria.yaml", c.stateDir)
+
+			err = os.WriteFile(configFile,
+				[]byte(fmt.Sprintf("server: %s\n\nsocks5:\n  listen: 127.0.0.1:%d\n", c.Hysteria2Server, c.hysteria2Port)),
+				0644)
+
 			if err != nil {
-				ptlog.Errorf("Failed to initialize %s: %s", methodName, err)
+				ptlog.Errorf("Could not write config file: %s\n", err.Error())
 				return err
 			}
 
 			c.hysteria2Running = true
+
+			go hysteria2.Start(configFile)
+
+			// Need to sleep a little here, to give Hysteria2 a chance to start.
+			// Otherwise, Hysteria2 wouldn't be listening
+			// on that configured SOCKS5 port, yet and connections would fail.
+			time.Sleep(time.Second)
 		}
 
 	case Snowflake:
@@ -675,7 +688,8 @@ func (c *Controller) Stop(methodName string) {
 	case Hysteria2:
 		if c.hysteria2Running {
 			ptlog.Noticef("Shutting down %s", methodName)
-			go v2ray.StopHysteria2()
+			go hysteria2.Stop()
+			_ = os.Remove(fmt.Sprintf("%s/hysteria.yaml", c.stateDir))
 			c.hysteria2Running = false
 		} else {
 			ptlog.Warnf("No listener for %s", methodName)

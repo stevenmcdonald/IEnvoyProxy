@@ -1,5 +1,9 @@
 # IEnvoyProxy Changlog
 
+## 3.2.0
+- Updated V2Ray to latest version 5.24.0.
+- Brought back own Hysteria2 support, as V2Ray dropped theirs again.
+
 ## 3.1.0
 - Updated V2Ray to latest version 5.23.0.
 - V2Ray now incorporates Hysteria2, so dropped own Hysteria2 for V2Ray version.
