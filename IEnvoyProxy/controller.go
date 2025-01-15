@@ -10,7 +10,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/stevenmcdonald/IEnvoyProxy/v2ray"
+	"IEnvoyProxy/v2ray"
 	"fmt"
 	hysteria2 "github.com/apernet/hysteria/app/v2/cmd"
 	"gitlab.com/stevenmcdonald/tenaciousdns"
