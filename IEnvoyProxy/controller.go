@@ -22,6 +22,7 @@ import (
 	sfversion "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/v2/common/version"
 	"golang.org/x/net/proxy"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -643,13 +644,13 @@ func (c *Controller) Start(methodName string, proxy string) error {
 			c.tenaciousDNSPort = findPort(c.tenaciousDNSPort)
 		}
 
-		tdnsConfig = tenaciousdns.GetDefaultConfig()
+		tdnsConfig := tenaciousdns.GetDefaultConfig()
 
 		tdnsConfig.DOHServers = strings.Split(c.TenaciousDNSdohServers, ",")
 		tdnsConfig.EnvoyUrl = c.TenaciousDNSEnvoyUrl
 		tdnsConfig.Listen = c.LocalAddress(TenaciousDNS)
 
-		go tenaciousdns.StartServer()
+		go tenaciousdns.StartServer(tdnsConfig)
 
 	default:
 		// at the moment, everything else is in lyrebird
