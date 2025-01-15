@@ -1,12 +1,11 @@
 module IEnvoyProxy
 
-go 1.22.0
-
-toolchain go1.23.3
+go 1.23.4
 
 require (
 	github.com/apernet/hysteria/app/v2 v2.6.0
 	github.com/v2fly/v2ray-core/v5 v5.24.0
+	gitlab.com/stevenmcdonald/tenaciousdns v0.0.0-20250114232933-71d6890359f7
 	gitlab.com/stevenmcdonald/tubesocks v0.0.0-20220419205400-4305891e0caa
 	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib v1.6.0
 	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird v0.0.0-20241119022218-28e9e5ccce1d
@@ -148,14 +147,12 @@ require (
 	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/ptutil v0.0.0-20240710081135-6c4d8ed41027 // indirect
 	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/webtunnel v0.0.0-20240711104640-e64b1b3562f3 // indirect
 	go.starlark.net v0.0.0-20230612165344-9532f5667272 // indirect
-	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/mock v0.4.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.24.0 // indirect
+	go.uber.org/zap v1.27.0 // indirect
 	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba // indirect
 	golang.org/x/crypto v0.32.0 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
-	golang.org/x/mobile v0.0.0-20250106192035-c31d5b91ecc3 // indirect
 	golang.org/x/mod v0.22.0 // indirect
 	golang.org/x/oauth2 v0.23.0 // indirect
 	golang.org/x/sync v0.10.0 // indirect
@@ -163,7 +160,6 @@ require (
 	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.29.0 // indirect
-	google.golang.org/genproto v0.0.0-20250106144421-5f5ef82da422 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250102185135-69823020774d // indirect
 	google.golang.org/grpc v1.68.1 // indirect
 	google.golang.org/protobuf v1.36.1 // indirect
