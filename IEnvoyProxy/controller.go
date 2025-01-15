@@ -10,7 +10,7 @@ import (
 	"os"
 	"path"
 
-	"IEnvoyProxy/v2ray"
+	"github.com/stevenmcdonald/IEnvoyProxy/v2ray"
 	"fmt"
 	hysteria2 "github.com/apernet/hysteria/app/v2/cmd"
 	"gitlab.com/stevenmcdonald/tenaciousdns"
@@ -648,7 +648,9 @@ func (c *Controller) Start(methodName string, proxy string) error {
 
 		tdnsConfig.DOHServers = strings.Split(c.TenaciousDNSdohServers, ",")
 		tdnsConfig.EnvoyUrl = c.TenaciousDNSEnvoyUrl
-		tdnsConfig.Listen = c.LocalAddress(TenaciousDNS)
+		tdnsConfig.Listen = "127.0.0.1:" + strconv.Itoa(c.tenaciousDNSPort)
+
+		c.tenaciousDNSRunning = true
 
 		go tenaciousdns.StartServer(tdnsConfig)
 
