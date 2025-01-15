@@ -5,7 +5,7 @@ go 1.23.4
 require (
 	github.com/apernet/hysteria/app/v2 v2.6.0
 	github.com/v2fly/v2ray-core/v5 v5.24.0
-	gitlab.com/stevenmcdonald/tenaciousdns v0.0.0-20250114232933-71d6890359f7
+	gitlab.com/stevenmcdonald/tenaciousdns v0.0.0-20250115214300-eaec7bc3f331
 	gitlab.com/stevenmcdonald/tubesocks v0.0.0-20220419205400-4305891e0caa
 	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib v1.6.0
 	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird v0.0.0-20241119022218-28e9e5ccce1d
@@ -82,6 +82,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mustafaturan/bus v1.0.2 // indirect
 	github.com/mustafaturan/monoton v1.0.0 // indirect
+	github.com/ncruces/go-dns v1.2.6 // indirect
 	github.com/onsi/ginkgo/v2 v2.17.0 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
