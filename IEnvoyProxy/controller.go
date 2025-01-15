@@ -152,7 +152,6 @@ type Controller struct {
 	// TenaciousDnsProxyUrl - URL of a proxy for the internal CONNECT proxy to proxy to
 	TenaciousDnsProxyUrl string
 
-
 	stateDir         string
 	transportStopped OnTransportStopped
 	listeners        map[string]*pt.SocksListener
