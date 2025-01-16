@@ -140,11 +140,13 @@ type Controller struct {
 	// Hysteria2Server - A Hysteria2 server URL https://v2.hysteria.network/docs/developers/URI-Scheme/
 	Hysteria2Server string
 
-
 	// TenaciousDNSdohServers - comma separated list of DoH servers to try to proxy to
 	TenaciousDNSdohServers string
 	// TenaciousDNSEnvoyUrl - Optional, if provided, will proxy Envoy requests to the given URL
 	TenaciousDNSEnvoyUrl string
+	// TenaciousDNSProxyUrl - URL of a proxy for the internal CONNECT proxy to proxy to
+	TenaciousDNSProxyUrl string
+
 
 	stateDir         string
 	transportStopped OnTransportStopped
@@ -164,6 +166,7 @@ type Controller struct {
 	v2rayWechatPort       int
 	hysteria2Port         int
 	tenaciousDNSPort      int
+	tenaciousDNSProxyPort int
 }
 
 // NewController - Create a new Controller object.
@@ -181,13 +184,14 @@ type Controller struct {
 //goland:noinspection GoUnusedExportedFunction
 func NewController(stateDir string, enableLogging, unsafeLogging bool, logLevel string, transportStopped OnTransportStopped) *Controller {
 	c := &Controller{
-		stateDir:         stateDir,
-		transportStopped: transportStopped,
-		v2raySrtpPort:    47600,
-		v2rayWechatPort:  47700,
-		v2rayWsPort:      47800,
-		hysteria2Port:    48000,
-		tenaciousDNSPort: 49000,
+		stateDir:              stateDir,
+		transportStopped:      transportStopped,
+		v2raySrtpPort:         47600,
+		v2rayWechatPort:       47700,
+		v2rayWsPort:           47800,
+		hysteria2Port:         48000,
+		tenaciousDNSPort:      49000,
+		tenaciousDNSProxyPort: 49050,
 	}
 
 	if logLevel == "" {
@@ -642,6 +646,7 @@ func (c *Controller) Start(methodName string, proxy string) error {
 	case TenaciousDNS:
 		if !c.tenaciousDNSRunning {
 			c.tenaciousDNSPort = findPort(c.tenaciousDNSPort)
+			c.tenaciousDNSProxyPort = findPort(c.tenaciousDNSProxyPort)
 		}
 
 		tdnsConfig := tenaciousdns.GetDefaultConfig()
@@ -649,6 +654,11 @@ func (c *Controller) Start(methodName string, proxy string) error {
 		tdnsConfig.DOHServers = strings.Split(c.TenaciousDNSdohServers, ",")
 		tdnsConfig.EnvoyUrl = c.TenaciousDNSEnvoyUrl
 		tdnsConfig.Listen = "127.0.0.1:" + strconv.Itoa(c.tenaciousDNSPort)
+
+		if c.TenaciousDNSProxyUrl != "" {
+			tdnsConfig.ProxyUrl = c.TenaciousDNSProxyUrl
+			tdnsConfig.ProxyListen = "127.0.0.1:" + strconv.Itoa(c.tenaciousDNSProxyPort)
+		}
 
 		c.tenaciousDNSRunning = true
 
