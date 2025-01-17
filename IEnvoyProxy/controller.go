@@ -13,6 +13,7 @@ import (
 	"IEnvoyProxy/v2ray"
 	"fmt"
 	hysteria2 "github.com/apernet/hysteria/app/v2/cmd"
+	"gitlab.com/stevenmcdonald/tenaciousdns"
 	"gitlab.com/stevenmcdonald/tubesocks"
 	pt "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib"
 	ptlog "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird/common/log"
@@ -21,6 +22,7 @@ import (
 	sfversion "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/v2/common/version"
 	"golang.org/x/net/proxy"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -75,6 +77,9 @@ const (
 
 	// Hysteria2 - Hysteria 2 Proxy
 	Hysteria2 = "hysteria2"
+
+	// TenaciousDNS - DNS and Envoy proxy
+	TenaciousDNS = "tenaciousdns"
 )
 
 // OnTransportStopped - Interface to get notified when a transport stopped again.
@@ -135,15 +140,24 @@ type Controller struct {
 	// Hysteria2Server - A Hysteria2 server URL https://v2.hysteria.network/docs/developers/URI-Scheme/
 	Hysteria2Server string
 
+	// TenaciousDNSdohServers - comma separated list of DoH servers to try to proxy to
+	TenaciousDNSdohServers string
+	// TenaciousDNSEnvoyUrl - Optional, if provided, will proxy Envoy requests to the given URL
+	TenaciousDNSEnvoyUrl string
+	// TenaciousDNSProxyUrl - URL of a proxy for the internal CONNECT proxy to proxy to
+	TenaciousDNSProxyUrl string
+
+
 	stateDir         string
 	transportStopped OnTransportStopped
 	listeners        map[string]*pt.SocksListener
 	shutdown         map[string]chan struct{}
 
-	v2rayWsRunning     bool
-	v2raySrtpRunning   bool
-	v2rayWechatRunning bool
-	hysteria2Running   bool
+	v2rayWsRunning      bool
+	v2raySrtpRunning    bool
+	v2rayWechatRunning  bool
+	hysteria2Running    bool
+	tenaciousDNSRunning bool
 
 	obf4TubeSocksPort     int
 	meekLiteTubeSocksPort int
@@ -151,6 +165,8 @@ type Controller struct {
 	v2raySrtpPort         int
 	v2rayWechatPort       int
 	hysteria2Port         int
+	tenaciousDNSPort      int
+	tenaciousDNSProxyPort int
 }
 
 // NewController - Create a new Controller object.
@@ -168,12 +184,14 @@ type Controller struct {
 //goland:noinspection GoUnusedExportedFunction
 func NewController(stateDir string, enableLogging, unsafeLogging bool, logLevel string, transportStopped OnTransportStopped) *Controller {
 	c := &Controller{
-		stateDir:         stateDir,
-		transportStopped: transportStopped,
-		v2raySrtpPort:    47600,
-		v2rayWechatPort:  47700,
-		v2rayWsPort:      47800,
-		hysteria2Port:    48000,
+		stateDir:              stateDir,
+		transportStopped:      transportStopped,
+		v2raySrtpPort:         47600,
+		v2rayWechatPort:       47700,
+		v2rayWsPort:           47800,
+		hysteria2Port:         48000,
+		tenaciousDNSPort:      49000,
+		tenaciousDNSProxyPort: 49050,
 	}
 
 	if logLevel == "" {
@@ -377,6 +395,12 @@ func (c *Controller) LocalAddress(methodName string) string {
 		}
 		return ""
 
+	case TenaciousDNS:
+		if c.tenaciousDNSRunning {
+			return net.JoinHostPort("127.0.0.1", strconv.Itoa(c.tenaciousDNSPort))
+		}
+		return ""
+
 	default:
 		if ln, ok := c.listeners[methodName]; ok {
 			return ln.Addr().String()
@@ -420,6 +444,12 @@ func (c *Controller) Port(methodName string) int {
 	case Hysteria2:
 		if c.hysteria2Running {
 			return c.hysteria2Port
+		}
+		return 0
+
+	case TenaciousDNS:
+		if c.tenaciousDNSRunning {
+			return c.tenaciousDNSPort
 		}
 		return 0
 
@@ -613,6 +643,27 @@ func (c *Controller) Start(methodName string, proxy string) error {
 
 		go acceptLoop(f, ln, nil, extraArgs, c.shutdown[methodName], methodName, c.transportStopped)
 
+	case TenaciousDNS:
+		if !c.tenaciousDNSRunning {
+			c.tenaciousDNSPort = findPort(c.tenaciousDNSPort)
+			c.tenaciousDNSProxyPort = findPort(c.tenaciousDNSProxyPort)
+		}
+
+		tdnsConfig := tenaciousdns.GetDefaultConfig()
+
+		tdnsConfig.DOHServers = strings.Split(c.TenaciousDNSdohServers, ",")
+		tdnsConfig.EnvoyUrl = c.TenaciousDNSEnvoyUrl
+		tdnsConfig.Listen = "127.0.0.1:" + strconv.Itoa(c.tenaciousDNSPort)
+
+		if c.TenaciousDNSProxyUrl != "" {
+			tdnsConfig.ProxyUrl = c.TenaciousDNSProxyUrl
+			tdnsConfig.ProxyListen = "127.0.0.1:" + strconv.Itoa(c.tenaciousDNSProxyPort)
+		}
+
+		c.tenaciousDNSRunning = true
+
+		go tenaciousdns.StartServer(tdnsConfig)
+
 	default:
 		// at the moment, everything else is in lyrebird
 		t := transports.Get(methodName)
@@ -691,6 +742,15 @@ func (c *Controller) Stop(methodName string) {
 			go hysteria2.Stop()
 			_ = os.Remove(fmt.Sprintf("%s/hysteria.yaml", c.stateDir))
 			c.hysteria2Running = false
+		} else {
+			ptlog.Warnf("No listener for %s", methodName)
+		}
+
+	case TenaciousDNS:
+		if c.tenaciousDNSRunning {
+			ptlog.Noticef("Shutting down %s", methodName)
+			tenaciousdns.StopServer()
+			c.tenaciousDNSRunning = false
 		} else {
 			ptlog.Warnf("No listener for %s", methodName)
 		}
