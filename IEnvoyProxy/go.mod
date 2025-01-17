@@ -5,7 +5,7 @@ go 1.23.4
 require (
 	github.com/apernet/hysteria/app/v2 v2.6.0
 	github.com/v2fly/v2ray-core/v5 v5.24.0
-	gitlab.com/stevenmcdonald/tenaciousdns v0.0.0-20250116223322-3b91b130bb0b
+	gitlab.com/stevenmcdonald/tenaciousdns v0.0.0-20250117225558-30bfa964f9f9
 	gitlab.com/stevenmcdonald/tubesocks v0.0.0-20220419205400-4305891e0caa
 	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib v1.6.0
 	gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird v0.0.0-20241119022218-28e9e5ccce1d

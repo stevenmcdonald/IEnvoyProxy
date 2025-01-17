@@ -589,6 +589,8 @@ github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 gitlab.com/stevenmcdonald/tenaciousdns v0.0.0-20250116223322-3b91b130bb0b h1:ZzwIdwPHYQtocH/RYMin20fpLHVmQM6ScYD57gFwaiw=
 gitlab.com/stevenmcdonald/tenaciousdns v0.0.0-20250116223322-3b91b130bb0b/go.mod h1:dmSb1RthgSSrExDgYCRqznyLJ62/jB2C4KDD+H6YGbQ=
+gitlab.com/stevenmcdonald/tenaciousdns v0.0.0-20250117225558-30bfa964f9f9 h1:UDsanAvBfBj7R/AVD4FcloTuRqre/u4ADKYw6f1RlXQ=
+gitlab.com/stevenmcdonald/tenaciousdns v0.0.0-20250117225558-30bfa964f9f9/go.mod h1:oMDNhEV2DBP6+AHz46+wTV6TU+C8L9ZHibhICH+3F3w=
 gitlab.com/stevenmcdonald/tubesocks v0.0.0-20220419205400-4305891e0caa h1:g+3WLBYPVbwEZ7qaVUPP/lS8FHqgPm8hRPIHDY+KHkI=
 gitlab.com/stevenmcdonald/tubesocks v0.0.0-20220419205400-4305891e0caa/go.mod h1:kGS4MixqeSAbv8brvNw4dPYlkOjsJm+xWKXrhh1jegM=
 gitlab.com/yawning/edwards25519-extra v0.0.0-20231005122941-2149dcafc266 h1:IvjshROr8z24+UCiOe/90cUWt3QDr8Rt+VkUjZsn+i0=
