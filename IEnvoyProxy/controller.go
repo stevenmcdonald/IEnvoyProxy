@@ -21,6 +21,7 @@ import (
 	sfversion "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/v2/common/version"
 	"golang.org/x/net/proxy"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -75,6 +76,10 @@ const (
 
 	// Hysteria2 - Hysteria 2 Proxy
 	Hysteria2 = "hysteria2"
+)
+
+var (
+	transportsInitOnce sync.Once
 )
 
 // OnTransportStopped - Interface to get notified when a transport stopped again.
@@ -194,7 +199,13 @@ func NewController(stateDir string, enableLogging, unsafeLogging bool, logLevel 
 		ptlog.Warnf("Failed to set log level: %s", err.Error())
 	}
 
-	if err := transports.Init(); err != nil {
+	// This should only ever be called once, even when new `Controller` instances are created.
+	var err error
+	transportsInitOnce.Do(func() {
+		err = transports.Init()
+	})
+
+	if err != nil {
 		ptlog.Warnf("Failed to initialize transports: %s", err.Error())
 		return nil
 	}
