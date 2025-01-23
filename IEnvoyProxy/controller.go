@@ -87,6 +87,10 @@ var (
 	transportsInitOnce sync.Once
 )
 
+var (
+	transportsInitOnce sync.Once
+)
+
 // OnTransportStopped - Interface to get notified when a transport stopped again.
 type OnTransportStopped interface {
 	Stopped(name string, error error)
