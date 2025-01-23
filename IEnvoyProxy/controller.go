@@ -22,7 +22,6 @@ import (
 	sfversion "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/v2/common/version"
 	"golang.org/x/net/proxy"
 	"strconv"
-	"strings"
 	"sync"
 	"strings"
 	"time"
