@@ -78,8 +78,8 @@ const (
 	// Hysteria2 - Hysteria 2 Proxy
 	Hysteria2 = "hysteria2"
 
-	// TenaciousDNS - DNS and Envoy proxy
-	TenaciousDNS = "tenaciousdns"
+	// TenaciousDns - DNS and Envoy proxy
+	TenaciousDns = "tenaciousdns"
 )
 
 // OnTransportStopped - Interface to get notified when a transport stopped again.
@@ -140,12 +140,12 @@ type Controller struct {
 	// Hysteria2Server - A Hysteria2 server URL https://v2.hysteria.network/docs/developers/URI-Scheme/
 	Hysteria2Server string
 
-	// TenaciousDNSdohServers - comma separated list of DoH servers to try to proxy to
-	TenaciousDNSdohServers string
-	// TenaciousDNSEnvoyUrl - Optional, if provided, will proxy Envoy requests to the given URL
-	TenaciousDNSEnvoyUrl string
-	// TenaciousDNSProxyUrl - URL of a proxy for the internal CONNECT proxy to proxy to
-	TenaciousDNSProxyUrl string
+	// TenaciousDnsdohServers - comma separated list of DoH servers to try to proxy to
+	TenaciousDnsdohServers string
+	// TenaciousDnsEnvoyUrl - Optional, if provided, will proxy Envoy requests to the given URL
+	TenaciousDnsEnvoyUrl string
+	// TenaciousDnsProxyUrl - URL of a proxy for the internal CONNECT proxy to proxy to
+	TenaciousDnsProxyUrl string
 
 
 	stateDir         string
@@ -157,7 +157,7 @@ type Controller struct {
 	v2raySrtpRunning    bool
 	v2rayWechatRunning  bool
 	hysteria2Running    bool
-	tenaciousDNSRunning bool
+	tenaciousDnsRunning bool
 
 	obf4TubeSocksPort     int
 	meekLiteTubeSocksPort int
@@ -165,8 +165,8 @@ type Controller struct {
 	v2raySrtpPort         int
 	v2rayWechatPort       int
 	hysteria2Port         int
-	tenaciousDNSPort      int
-	tenaciousDNSProxyPort int
+	tenaciousDnsPort      int
+	tenaciousDnsProxyPort int
 }
 
 // NewController - Create a new Controller object.
@@ -190,8 +190,8 @@ func NewController(stateDir string, enableLogging, unsafeLogging bool, logLevel 
 		v2rayWechatPort:       47700,
 		v2rayWsPort:           47800,
 		hysteria2Port:         48000,
-		tenaciousDNSPort:      49000,
-		tenaciousDNSProxyPort: 49050,
+		tenaciousDnsPort:      49000,
+		tenaciousDnsProxyPort: 49050,
 	}
 
 	if logLevel == "" {
@@ -395,9 +395,9 @@ func (c *Controller) LocalAddress(methodName string) string {
 		}
 		return ""
 
-	case TenaciousDNS:
-		if c.tenaciousDNSRunning {
-			return net.JoinHostPort("127.0.0.1", strconv.Itoa(c.tenaciousDNSPort))
+	case TenaciousDns:
+		if c.tenaciousDnsRunning {
+			return net.JoinHostPort("127.0.0.1", strconv.Itoa(c.tenaciousDnsPort))
 		}
 		return ""
 
@@ -447,9 +447,9 @@ func (c *Controller) Port(methodName string) int {
 		}
 		return 0
 
-	case TenaciousDNS:
-		if c.tenaciousDNSRunning {
-			return c.tenaciousDNSPort
+	case TenaciousDns:
+		if c.tenaciousDnsRunning {
+			return c.tenaciousDnsPort
 		}
 		return 0
 
@@ -643,24 +643,24 @@ func (c *Controller) Start(methodName string, proxy string) error {
 
 		go acceptLoop(f, ln, nil, extraArgs, c.shutdown[methodName], methodName, c.transportStopped)
 
-	case TenaciousDNS:
-		if !c.tenaciousDNSRunning {
-			c.tenaciousDNSPort = findPort(c.tenaciousDNSPort)
-			c.tenaciousDNSProxyPort = findPort(c.tenaciousDNSProxyPort)
+	case TenaciousDns:
+		if !c.tenaciousDnsRunning {
+			c.tenaciousDnsPort = findPort(c.tenaciousDnsPort)
+			c.tenaciousDnsProxyPort = findPort(c.tenaciousDnsProxyPort)
 		}
 
 		tdnsConfig := tenaciousdns.GetDefaultConfig()
 
-		tdnsConfig.DOHServers = strings.Split(c.TenaciousDNSdohServers, ",")
-		tdnsConfig.EnvoyUrl = c.TenaciousDNSEnvoyUrl
-		tdnsConfig.Listen = "127.0.0.1:" + strconv.Itoa(c.tenaciousDNSPort)
+		tdnsConfig.DOHServers = strings.Split(c.TenaciousDnsdohServers, ",")
+		tdnsConfig.EnvoyUrl = c.TenaciousDnsEnvoyUrl
+		tdnsConfig.Listen = "127.0.0.1:" + strconv.Itoa(c.tenaciousDnsPort)
 
-		if c.TenaciousDNSProxyUrl != "" {
-			tdnsConfig.ProxyUrl = c.TenaciousDNSProxyUrl
-			tdnsConfig.ProxyListen = "127.0.0.1:" + strconv.Itoa(c.tenaciousDNSProxyPort)
+		if c.TenaciousDnsProxyUrl != "" {
+			tdnsConfig.ProxyUrl = c.TenaciousDnsProxyUrl
+			tdnsConfig.ProxyListen = "127.0.0.1:" + strconv.Itoa(c.tenaciousDnsProxyPort)
 		}
 
-		c.tenaciousDNSRunning = true
+		c.tenaciousDnsRunning = true
 
 		go tenaciousdns.StartServer(tdnsConfig)
 
@@ -746,11 +746,11 @@ func (c *Controller) Stop(methodName string) {
 			ptlog.Warnf("No listener for %s", methodName)
 		}
 
-	case TenaciousDNS:
-		if c.tenaciousDNSRunning {
+	case TenaciousDns:
+		if c.tenaciousDnsRunning {
 			ptlog.Noticef("Shutting down %s", methodName)
 			tenaciousdns.StopServer()
-			c.tenaciousDNSRunning = false
+			c.tenaciousDnsRunning = false
 		} else {
 			ptlog.Warnf("No listener for %s", methodName)
 		}
