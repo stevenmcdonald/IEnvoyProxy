@@ -653,11 +653,11 @@ func (c *Controller) Start(methodName string, proxy string) error {
 
 		tdnsConfig.DOHServers = strings.Split(c.TenaciousDnsdohServers, ",")
 		tdnsConfig.EnvoyUrl = c.TenaciousDnsEnvoyUrl
-		tdnsConfig.Listen = "127.0.0.1:" + strconv.Itoa(c.tenaciousDnsPort)
+		tdnsConfig.Listen = net.JoinHostPort("127.0.0.1", strconv.Itoa(c.tenaciousDnsPort))
 
 		if c.TenaciousDnsProxyUrl != "" {
 			tdnsConfig.ProxyUrl = c.TenaciousDnsProxyUrl
-			tdnsConfig.ProxyListen = "127.0.0.1:" + strconv.Itoa(c.tenaciousDnsProxyPort)
+			tdnsConfig.ProxyListen = net.JoinHostPort("127.0.0.1:", strconv.Itoa(c.tenaciousDnsProxyPort))
 		}
 
 		c.tenaciousDnsRunning = true
