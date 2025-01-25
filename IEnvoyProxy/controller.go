@@ -10,7 +10,7 @@ import (
 	"os"
 	"path"
 
-	"IEnvoyProxy/v2ray"
+	"github.com/stevenmcdonald/IEnvoyProxy/v2ray"
 	"fmt"
 	hysteria2 "github.com/apernet/hysteria/app/v2/cmd"
 	"gitlab.com/stevenmcdonald/tenaciousdns"
@@ -87,10 +87,6 @@ var (
 	transportsInitOnce sync.Once
 )
 
-var (
-	transportsInitOnce sync.Once
-)
-
 // OnTransportStopped - Interface to get notified when a transport stopped again.
 type OnTransportStopped interface {
 	Stopped(name string, error error)
@@ -151,10 +147,9 @@ type Controller struct {
 
 	// TenaciousDnsdohServers - comma separated list of DoH servers to try to proxy to
 	TenaciousDnsdohServers string
+
 	// TenaciousDnsEnvoyUrl - Optional, if provided, will proxy Envoy requests to the given URL
 	TenaciousDnsEnvoyUrl string
-	// TenaciousDnsProxyUrl - URL of a proxy for the internal CONNECT proxy to proxy to
-	TenaciousDnsProxyUrl string
 
 	stateDir         string
 	transportStopped OnTransportStopped
@@ -665,14 +660,11 @@ func (c *Controller) Start(methodName string, proxy string) error {
 
 		tdnsConfig := tenaciousdns.GetDefaultConfig()
 
-		tdnsConfig.DOHServers = strings.Split(c.TenaciousDnsdohServers, ",")
+		if c.TenaciousDnsdohServers != "" {
+			tdnsConfig.DOHServers = strings.Split(c.TenaciousDnsdohServers, ",")
+		}
 		tdnsConfig.EnvoyUrl = c.TenaciousDnsEnvoyUrl
 		tdnsConfig.Listen = net.JoinHostPort("127.0.0.1", strconv.Itoa(c.tenaciousDnsPort))
-
-		if c.TenaciousDnsProxyUrl != "" {
-			tdnsConfig.ProxyUrl = c.TenaciousDnsProxyUrl
-			tdnsConfig.ProxyListen = net.JoinHostPort("127.0.0.1:", strconv.Itoa(c.tenaciousDnsProxyPort))
-		}
 
 		c.tenaciousDnsRunning = true
 
