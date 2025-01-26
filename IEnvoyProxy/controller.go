@@ -169,7 +169,6 @@ type Controller struct {
 	v2rayWechatPort       int
 	hysteria2Port         int
 	tenaciousDnsPort      int
-	tenaciousDnsProxyPort int
 }
 
 // NewController - Create a new Controller object.
@@ -194,7 +193,6 @@ func NewController(stateDir string, enableLogging, unsafeLogging bool, logLevel 
 		v2rayWsPort:           47800,
 		hysteria2Port:         48000,
 		tenaciousDnsPort:      49000,
-		tenaciousDnsProxyPort: 49050,
 	}
 
 	if logLevel == "" {
@@ -655,20 +653,19 @@ func (c *Controller) Start(methodName string, proxy string) error {
 	case TenaciousDns:
 		if !c.tenaciousDnsRunning {
 			c.tenaciousDnsPort = findPort(c.tenaciousDnsPort)
-			c.tenaciousDnsProxyPort = findPort(c.tenaciousDnsProxyPort)
 		}
 
-		tdnsConfig := tenaciousdns.GetDefaultConfig()
+		tdns := tenaciousdns.NewServer()
 
 		if c.TenaciousDnsdohServers != "" {
-			tdnsConfig.DOHServers = strings.Split(c.TenaciousDnsdohServers, ",")
+			tdns.DOHServers = strings.Split(c.TenaciousDnsdohServers, ",")
 		}
-		tdnsConfig.EnvoyUrl = c.TenaciousDnsEnvoyUrl
-		tdnsConfig.Listen = net.JoinHostPort("127.0.0.1", strconv.Itoa(c.tenaciousDnsPort))
+		tdns.EnvoyUrl = c.TenaciousDnsEnvoyUrl
+		tdns.Listen = net.JoinHostPort("127.0.0.1", strconv.Itoa(c.tenaciousDnsPort))
 
 		c.tenaciousDnsRunning = true
 
-		go tenaciousdns.StartServer(tdnsConfig)
+		go tdns.StartServer()
 
 	default:
 		// at the moment, everything else is in lyrebird
