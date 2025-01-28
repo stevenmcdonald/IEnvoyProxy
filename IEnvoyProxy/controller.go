@@ -662,6 +662,7 @@ func (c *Controller) Start(methodName string, proxy string) error {
 		}
 		tdns.EnvoyUrl = c.TenaciousDnsEnvoyUrl
 		tdns.Listen = net.JoinHostPort("127.0.0.1", strconv.Itoa(c.tenaciousDnsPort))
+		tdns.Timeout = 30 * time.Second
 
 		c.tenaciousDnsRunning = true
 
