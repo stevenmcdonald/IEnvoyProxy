@@ -10,9 +10,10 @@ import (
 	"os"
 	"path"
 
-	"IEnvoyProxy/v2ray"
+	"github.com/stevenmcdonald/IEnvoyProxy/v2ray"
 	"fmt"
 	hysteria2 "github.com/apernet/hysteria/app/v2/cmd"
+	"gitlab.com/stevenmcdonald/tenaciousdns"
 	"gitlab.com/stevenmcdonald/tubesocks"
 	pt "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib"
 	ptlog "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird/common/log"
@@ -22,6 +23,7 @@ import (
 	"golang.org/x/net/proxy"
 	"strconv"
 	"sync"
+	"strings"
 	"time"
 )
 
@@ -76,6 +78,9 @@ const (
 
 	// Hysteria2 - Hysteria 2 Proxy
 	Hysteria2 = "hysteria2"
+
+	// TenaciousDns - DNS and Envoy proxy
+	TenaciousDns = "tenaciousdns"
 )
 
 var (
@@ -140,15 +145,22 @@ type Controller struct {
 	// Hysteria2Server - A Hysteria2 server URL https://v2.hysteria.network/docs/developers/URI-Scheme/
 	Hysteria2Server string
 
+	// TenaciousDnsdohServers - comma separated list of DoH servers to try to proxy to
+	TenaciousDnsdohServers string
+
+	// TenaciousDnsEnvoyUrl - Optional, if provided, will proxy Envoy requests to the given URL
+	TenaciousDnsEnvoyUrl string
+
 	stateDir         string
 	transportStopped OnTransportStopped
 	listeners        map[string]*pt.SocksListener
 	shutdown         map[string]chan struct{}
 
-	v2rayWsRunning     bool
-	v2raySrtpRunning   bool
-	v2rayWechatRunning bool
-	hysteria2Running   bool
+	v2rayWsRunning      bool
+	v2raySrtpRunning    bool
+	v2rayWechatRunning  bool
+	hysteria2Running    bool
+	tenaciousDnsRunning bool
 
 	obf4TubeSocksPort     int
 	meekLiteTubeSocksPort int
@@ -156,6 +168,7 @@ type Controller struct {
 	v2raySrtpPort         int
 	v2rayWechatPort       int
 	hysteria2Port         int
+	tenaciousDnsPort      int
 }
 
 // NewController - Create a new Controller object.
@@ -173,12 +186,13 @@ type Controller struct {
 //goland:noinspection GoUnusedExportedFunction
 func NewController(stateDir string, enableLogging, unsafeLogging bool, logLevel string, transportStopped OnTransportStopped) *Controller {
 	c := &Controller{
-		stateDir:         stateDir,
-		transportStopped: transportStopped,
-		v2raySrtpPort:    47600,
-		v2rayWechatPort:  47700,
-		v2rayWsPort:      47800,
-		hysteria2Port:    48000,
+		stateDir:              stateDir,
+		transportStopped:      transportStopped,
+		v2raySrtpPort:         47600,
+		v2rayWechatPort:       47700,
+		v2rayWsPort:           47800,
+		hysteria2Port:         48000,
+		tenaciousDnsPort:      49000,
 	}
 
 	if logLevel == "" {
@@ -388,6 +402,12 @@ func (c *Controller) LocalAddress(methodName string) string {
 		}
 		return ""
 
+	case TenaciousDns:
+		if c.tenaciousDnsRunning {
+			return net.JoinHostPort("127.0.0.1", strconv.Itoa(c.tenaciousDnsPort))
+		}
+		return ""
+
 	default:
 		if ln, ok := c.listeners[methodName]; ok {
 			return ln.Addr().String()
@@ -431,6 +451,12 @@ func (c *Controller) Port(methodName string) int {
 	case Hysteria2:
 		if c.hysteria2Running {
 			return c.hysteria2Port
+		}
+		return 0
+
+	case TenaciousDns:
+		if c.tenaciousDnsRunning {
+			return c.tenaciousDnsPort
 		}
 		return 0
 
@@ -624,6 +650,24 @@ func (c *Controller) Start(methodName string, proxy string) error {
 
 		go acceptLoop(f, ln, nil, extraArgs, c.shutdown[methodName], methodName, c.transportStopped)
 
+	case TenaciousDns:
+		if !c.tenaciousDnsRunning {
+			c.tenaciousDnsPort = findPort(c.tenaciousDnsPort)
+		}
+
+		tdns := tenaciousdns.NewServer()
+
+		if c.TenaciousDnsdohServers != "" {
+			tdns.DOHServers = strings.Split(c.TenaciousDnsdohServers, ",")
+		}
+		tdns.EnvoyUrl = c.TenaciousDnsEnvoyUrl
+		tdns.Listen = net.JoinHostPort("127.0.0.1", strconv.Itoa(c.tenaciousDnsPort))
+		tdns.Timeout = 30 * time.Second
+
+		c.tenaciousDnsRunning = true
+
+		go tdns.StartServer()
+
 	default:
 		// at the moment, everything else is in lyrebird
 		t := transports.Get(methodName)
@@ -702,6 +746,15 @@ func (c *Controller) Stop(methodName string) {
 			go hysteria2.Stop()
 			_ = os.Remove(fmt.Sprintf("%s/hysteria.yaml", c.stateDir))
 			c.hysteria2Running = false
+		} else {
+			ptlog.Warnf("No listener for %s", methodName)
+		}
+
+	case TenaciousDns:
+		if c.tenaciousDnsRunning {
+			ptlog.Noticef("Shutting down %s", methodName)
+			tenaciousdns.StopServer()
+			c.tenaciousDnsRunning = false
 		} else {
 			ptlog.Warnf("No listener for %s", methodName)
 		}
