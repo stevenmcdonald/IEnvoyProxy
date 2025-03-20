@@ -43,7 +43,7 @@ IEnvoyProxy is available through [CocoaPods](https://cocoapods.org). To install
 it, add the following line to your `Podfile`:
 
 ```ruby
-pod 'IEnvoyProxy', :git => 'https://github.com/stevenmcdonald/IEnvoyProxy.git', :tag => '3.2.0'
+pod 'IEnvoyProxy', :git => 'https://github.com/stevenmcdonald/IEnvoyProxy.git', :tag => '3.3.0'
 ```
 
 ### Getting Started
@@ -89,7 +89,7 @@ IEnvoyProxy is available through [JitPack](https://jitpack.io). To install
 it, simply add the following line to your `build.gradle` file:
 
 ```groovy
-implementation 'org.greatfire:IEnvoyProxy:3.2.0'
+implementation 'org.greatfire:IEnvoyProxy:3.3.0'
 ```
 
 And this to your root `build.gradle` at the end of repositories:
@@ -151,7 +151,7 @@ Controller ptc = Controller(ptDir, true, false, "INFO");
 
 ### Requirements
 
-You'll need Go 1.21 as a prerequisite.
+You'll need Go 1.23 as a prerequisite.
 
 You will also need Xcode installed when compiling for iOS and an Android NDK
 when compiling for Android.
