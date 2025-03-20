@@ -112,7 +112,7 @@ index db45052..ca802c1 100644
  	defer conn.Close()
  
 diff --git a/app/cmd/root.go b/app/cmd/root.go
-index a58e2bc..a3fd043 100644
+index 13f9705..3fb932c 100644
 --- a/app/cmd/root.go
 +++ b/app/cmd/root.go
 @@ -105,6 +105,21 @@ func Execute() {
@@ -162,10 +162,10 @@ index a58e2bc..a3fd043 100644
  }
  
 diff --git a/app/cmd/server.go b/app/cmd/server.go
-index a4b8470..6102b94 100644
+index a2aa9a4..9c8e15e 100644
 --- a/app/cmd/server.go
 +++ b/app/cmd/server.go
-@@ -898,20 +898,20 @@ func runServer(cmd *cobra.Command, args []string) {
+@@ -922,20 +922,20 @@ func runServer(cmd *cobra.Command, args []string) {
  	logger.Info("server mode")
  
  	if err := viper.ReadInConfig(); err != nil {
@@ -190,7 +190,7 @@ index a4b8470..6102b94 100644
  	}
  	if config.Listen != "" {
  		logger.Info("server up and running", zap.String("listen", config.Listen))
-@@ -924,14 +924,14 @@ func runServer(cmd *cobra.Command, args []string) {
+@@ -948,14 +948,14 @@ func runServer(cmd *cobra.Command, args []string) {
  	}
  
  	if err := s.Serve(); err != nil {
@@ -207,7 +207,7 @@ index a4b8470..6102b94 100644
  	}
  }
  
-@@ -951,7 +951,7 @@ func runMasqTCPServer(s *masq.MasqTCPServer, httpAddr, httpsAddr string) {
+@@ -975,7 +975,7 @@ func runMasqTCPServer(s *masq.MasqTCPServer, httpAddr, httpsAddr string) {
  	}
  	err := <-errChan
  	if err != nil {

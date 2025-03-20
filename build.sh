@@ -32,7 +32,7 @@ if test -e $OUTPUT; then
 fi
 
 # Install dependencies. Go itself is a prerequisite.
-printf '\n--- Golang 1.21 or up needs to be installed! Try "brew install go" on MacOS or "snap install go" on Linux if we fail further down!'
+printf '\n--- Golang 1.23 or up needs to be installed! Try "brew install go" on MacOS or "snap install go" on Linux if we fail further down!'
 printf '\n--- Installing gomobile...\n'
 go install golang.org/x/mobile/cmd/gomobile@latest
 
@@ -49,19 +49,14 @@ cp -a IEnvoyProxy "$TMPDIR/"
 printf '\n\n--- Fetching submodule dependencies...\n'
 if test -e ".git"; then
     # There's a .git directory - we must be in the development pod.
-    git submodule update --init --recursive
+    git submodule update --init --recursive --force
     cd hysteria || exit 1
     git reset --hard
     cp -a . "$TMPDIR/hysteria"
-    cd ../v2ray-core || exit 1
-    git reset --hard
-    git clean -fd # we add a file
-    cp -a . "$TMPDIR/v2ray-core"
     cd ..
 else
     # No .git directory - That's a normal install.
-    git clone --recursive --shallow-submodules --depth 1 --branch "15e31d48" https://github.com/apernet/hysteria.git "$TMPDIR/hysteria"
-    git clone --recursive --shallow-submodules --depth 1 --branch "d59c2b4c" https://github.com/v2fly/v2ray-core.git "$TMPDIR/v2ray-core"
+    git clone --recursive --shallow-submodules --depth 1 --branch "401ed524" https://github.com/apernet/hysteria.git "$TMPDIR/hysteria"
 fi
 
 # Apply patches.
