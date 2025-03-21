@@ -43,7 +43,7 @@ IEnvoyProxy is available through [CocoaPods](https://cocoapods.org). To install
 it, add the following line to your `Podfile`:
 
 ```ruby
-pod 'IEnvoyProxy', :git => 'https://github.com/stevenmcdonald/IEnvoyProxy.git', :tag => '3.3.0'
+pod 'IEnvoyProxy', :podspec => 'https://raw.githubusercontent.com/stevenmcdonald/IEnvoyProxy/refs/tags/e3.3.0/IEnvoyProxy.podspec'
 ```
 
 ### Getting Started
