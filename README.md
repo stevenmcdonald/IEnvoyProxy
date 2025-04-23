@@ -43,7 +43,7 @@ IEnvoyProxy is available through [CocoaPods](https://cocoapods.org). To install
 it, add the following line to your `Podfile`:
 
 ```ruby
-pod 'IEnvoyProxy', :podspec => 'https://raw.githubusercontent.com/stevenmcdonald/IEnvoyProxy/refs/tags/e3.3.0/IEnvoyProxy.podspec'
+pod 'IEnvoyProxy', :podspec => 'https://raw.githubusercontent.com/stevenmcdonald/IEnvoyProxy/refs/tags/e3.4.0/IEnvoyProxy.podspec'
 ```
 
 ### Getting Started
@@ -89,7 +89,7 @@ IEnvoyProxy is available through [JitPack](https://jitpack.io). To install
 it, simply add the following line to your `build.gradle` file:
 
 ```groovy
-implementation 'org.greatfire:IEnvoyProxy:3.3.0'
+implementation 'org.greatfire:IEnvoyProxy:3.4.0'
 ```
 
 And this to your root `build.gradle` at the end of repositories:
