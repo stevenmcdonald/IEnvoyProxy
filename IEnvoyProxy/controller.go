@@ -732,7 +732,7 @@ func SnowflakeVersion() string {
 //
 //goland:noinspection GoUnusedExportedFunction
 func LyrebirdVersion() string {
-	return "lyrebird-0.5.0"
+	return "lyrebird-0.6.0"
 }
 
 func findPort(port int) int {

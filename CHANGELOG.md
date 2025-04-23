@@ -1,5 +1,10 @@
 # IEnvoyProxy Changlog
 
+## 3.4.0
+- Updated V2Ray to version 5.30.0.
+- Fixed Hysteria submodule to version 2.6.1. Was 2.6.0 before.
+- Fixed Lyrebird version string.
+
 ## 3.3.0
 - Updated Snowflake to version 2.11.0.
 - Updated Lyrebird to version 0.6.0.
