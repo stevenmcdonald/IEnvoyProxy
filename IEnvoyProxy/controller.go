@@ -10,9 +10,13 @@ import (
 	"os"
 	"path"
 
-	"IEnvoyProxy/v2ray"
 	"fmt"
+	"strconv"
+	"sync"
+	"time"
+
 	hysteria2 "github.com/apernet/hysteria/app/v2/cmd"
+	v2ray "github.com/v2fly/v2ray-core/v5/envoy"
 	"gitlab.com/stevenmcdonald/tubesocks"
 	pt "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/goptlib"
 	ptlog "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird/common/log"
@@ -20,9 +24,6 @@ import (
 	"gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird/transports/base"
 	sfversion "gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/v2/common/version"
 	"golang.org/x/net/proxy"
-	"strconv"
-	"sync"
-	"time"
 )
 
 // LogFileName - the filename of the log residing in `StateDir`.

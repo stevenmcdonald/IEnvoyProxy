@@ -185,4 +185,5 @@ replace (
 	github.com/apernet/hysteria/app/v2 => ../hysteria/app
 	github.com/apernet/hysteria/core/v2 => ../hysteria/core
 	github.com/apernet/hysteria/extras/v2 => ../hysteria/extras
+	github.com/v2fly/v2ray-core/v5 => ../v2ray-core
 )
