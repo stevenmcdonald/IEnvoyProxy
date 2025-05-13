@@ -44,10 +44,10 @@ Pod::Spec.new do |s|
 
   DESC
 
-  s.homepage         = 'https://github.com/stevenmcdonald/IEnvoyProxy'
+  s.homepage         = 'https://github.com/greatfire/IEnvoyProxy'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'Benjamin Erhart' => 'berhart@netzarchitekten.com' }
-  s.source           = { :http => "https://github.com/stevenmcdonald/IEnvoyProxy/releases/download/e#{s.version}/IEnvoyProxy.xcframework.zip" }
+  s.source           = { :http => "https://github.com/greatfire/IEnvoyProxy/releases/download/e#{s.version}/IEnvoyProxy.xcframework.zip" }
   s.social_media_url = 'https://chaos.social/@tla'
 
   s.ios.deployment_target = '12.0'
