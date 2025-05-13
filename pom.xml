@@ -61,7 +61,7 @@ currently this includes: Lyrebird, Snowflake, V2Ray and Hysteria2.</description>
     </developer>
   </developers>
   <scm>
-    <connection>scm:git:https://github.com/stevenmcdonald/IEnvoyProxy.git</connection>
-    <url>https://github.com/stevenmcdonald/IEnvoyProxy</url>
+    <connection>scm:git:https://github.com/greatfire/IEnvoyProxy.git</connection>
+    <url>https://github.com/greatfire/IEnvoyProxy</url>
   </scm>
 </project>
