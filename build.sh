@@ -53,16 +53,22 @@ if test -e ".git"; then
     cd hysteria || exit 1
     git reset --hard
     cp -a . "$TMPDIR/hysteria"
+    cd ../v2ray-core || exit 1
+    git reset --hard
+    git clean -fdx
+    cp -a . "$TMPDIR/v2ray-core"
     cd ..
 else
     # No .git directory - That's a normal install.
     git clone --recursive --shallow-submodules --depth 1 --branch "401ed524" https://github.com/apernet/hysteria.git "$TMPDIR/hysteria"
+    git clone --recursive --shallow-submodules --depth 1 --branch "28f55860" https://github.com/v2fly/v2ray-core.git "$TMPDIR/v2ray-core"
 fi
 
 # Apply patches.
 printf '\n\n--- Apply patches to submodules...\n'
 pwd
 patch --directory="$TMPDIR/hysteria" --strip=1 < hysteria.patch
+patch --directory="$TMPDIR/v2ray-core" --strip=1 < v2ray-core.patch
 
 # Compile framework.
 printf '\n\n--- Compile %s...\n' "$OUTPUT"
