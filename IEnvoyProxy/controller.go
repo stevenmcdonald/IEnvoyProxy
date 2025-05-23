@@ -138,6 +138,12 @@ type Controller struct {
 	// V2RayId - V2Ray UUID for auth
 	V2RayId string
 
+	// V2RayAllowInsecure - If true, V2Ray allows insecure connection at TLS client
+	V2RayAllowInsecure bool
+
+	// V2RayServerName - Server name used for TLS authentication.
+	V2RayServerName string
+
 	// Hysteria2Server - A Hysteria2 server URL https://v2.hysteria.network/docs/developers/URI-Scheme/
 	Hysteria2Server string
 
@@ -533,7 +539,10 @@ func (c *Controller) Start(methodName string, proxy string) error {
 		if !c.v2rayWsRunning {
 			c.v2rayWsPort = findPort(c.v2rayWsPort)
 
-			err := v2ray.StartWs(c.v2rayWsPort, c.V2RayServerAddress, c.V2RayServerPort, c.V2RayWsPath, c.V2RayId)
+			err := v2ray.StartWs(c.v2rayWsPort, c.V2RayServerAddress, c.V2RayServerPort, c.V2RayWsPath, c.V2RayId, v2ray.WsConfigOptional{
+				AllowInsecure: c.V2RayAllowInsecure,
+				ServerName:    c.V2RayServerName,
+			})
 			if err != nil {
 				ptlog.Errorf("Failed to initialize %s: %s", methodName, err)
 				return err

@@ -46,10 +46,10 @@ index 00000000..da1ad5c6
 +}
 diff --git a/envoy/v2ray.go b/envoy/v2ray.go
 new file mode 100644
-index 00000000..d0cc4096
+index 0000000..bd787bf
 --- /dev/null
 +++ b/envoy/v2ray.go
-@@ -0,0 +1,270 @@
+@@ -0,0 +1,295 @@
 +package v2ray
 +
 +// copied and modified from main/commands/run.go
@@ -102,7 +102,7 @@ index 00000000..d0cc4096
 +      }`, clientPort)
 +}
 +
-+func getWsConfig(clientPort int, serverAddress, serverWsPort, wsPath, id string) string {
++func getWsConfig(clientPort int, serverAddress, serverWsPort, wsPath, id string, allowInsecure bool, serverName string) string {
 +	return fmt.Sprintf(`
 +  {
 +    "log": {
@@ -130,13 +130,17 @@ index 00000000..d0cc4096
 +        "streamSettings": {
 +          "network": "ws",
 +          "security": "tls",
++          "tlsSettings": {
++            "allowInsecure": %t,
++            "serverName": "%s"
++          },
 +          "wsSettings": {
 +            "path": "%s"
 +          }
 +        }
 +      }
 +    ]
-+  }`, getInbound(clientPort), serverAddress, serverWsPort, id, wsPath)
++  }`, getInbound(clientPort), serverAddress, serverWsPort, id, allowInsecure, serverName, wsPath)
 +}
 +
 +// getQUICConfig
@@ -214,6 +218,12 @@ index 00000000..d0cc4096
 +	return server, nil
 +}
 +
++// WsConfigOptional holds optional configuration for WebSocket connections
++type WsConfigOptional struct {
++	AllowInsecure bool
++	ServerName    string
++}
++
 +// StartWs - start v2ray, websocket transport
 +//
 +// @param clientPort - client SOCKS port routed to the WS server
@@ -226,9 +236,24 @@ index 00000000..d0cc4096
 +//
 +// @param id - UUID used to authenticate with the server
 +//
++// @param config - optional configuration (allowInsecure defaults to false, serverName defaults to serverAddress)
++//
 +// @returns error, if transport could not be started, or `nil` on success.
-+func StartWs(clientPort int, serverAddress, serverPort, wsPath, id string) error {
-+	server, err := startServer(getWsConfig(clientPort, serverAddress, serverPort, wsPath, id))
++func StartWs(clientPort int, serverAddress, serverPort, wsPath, id string, config ...WsConfigOptional) error {
++	// Set defaults for optional config
++	allowInsecure := false
++	serverName := serverAddress
++
++	// Override with provided config if any
++	if len(config) > 0 {
++		cfg := config[0]
++		allowInsecure = cfg.AllowInsecure
++		if cfg.ServerName != "" {
++			serverName = cfg.ServerName
++		}
++	}
++
++	server, err := startServer(getWsConfig(clientPort, serverAddress, serverPort, wsPath, id, allowInsecure, serverName))
 +	if err != nil {
 +		return err
 +	}
